@@ -1,0 +1,4152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>角色生成器</title>
+
+    <!-- 
+          ============================= 多世界背景颜色配置 =============================
+          
+          🎨 快速修改说明：
+          1. 想要改变整体主题色？ → 修改 --primary-color、--primary-dark、--primary-darker
+          2. 想要改变文字颜色？   → 修改 --secondary-color  
+          3. 想要改变面板颜色？   → 修改 --panel-bg
+          4. 想要改变提示颜色？   → 修改 --success-color、--error-color 等
+          
+          🎨 详细说明：
+          --primary-color: 主色调 (#313a3d) → 页面背景渐变、选中状态文字色
+          --primary-dark: 深色调 (#2a3235) → 页面背景渐变中间色  
+          --primary-darker: 更深色 (#212a2d) → 页面背景渐变底色
+          --secondary-color: 辅助色 (#ebd7d7) → 主要文字颜色、按钮边框色
+          --panel-bg: 面板色 (#313a3d) → 所有输入框、选择框、按钮背景色
+          --success-color: 成功色 (#4ade80) → 成功提示文字颜色
+          --error-color: 错误色 (#f87171) → 错误提示、警告边框颜色  
+          --muted-color: 静音色 (#a1a1aa) → 禁用状态文字颜色
+          --accent-color: 强调色 (#c084fc) → 特殊标记、高亮颜色
+          
+          💡 修改提示：直接替换颜色代码即可，如 #ff0000(红色) #00ff00(绿色) #0000ff(蓝色)
+          ========================================================================
+          -->
+    <style>
+      :root {
+        /* 主要颜色 - 将由JavaScript根据世界背景动态设置 */
+        --primary-color: #313a3d;
+        --primary-dark: #2a3235;
+        --primary-darker: #212a2d;
+        --secondary-color: #ebd7d7;
+
+        /* 面板颜色 */
+        --panel-bg: #313a3d;
+        --panel-bg-opacity: 0.9;
+
+        /* 功能颜色 */
+        --success-color: #4ade80;
+        --error-color: #f87171;
+        --muted-color: #a1a1aa;
+        --accent-color: #c084fc;
+
+        /* 自动计算的透明度颜色（请勿修改） */
+        --primary-opacity-10: rgba(49, 58, 61, 0.1);
+        --primary-opacity-20: rgba(49, 58, 61, 0.2);
+        --primary-opacity-30: rgba(49, 58, 61, 0.3);
+        --primary-opacity-40: rgba(49, 58, 61, 0.4);
+        --secondary-opacity-10: rgba(235, 215, 215, 0.1);
+        --secondary-opacity-20: rgba(235, 215, 215, 0.2);
+        --secondary-opacity-30: rgba(235, 215, 215, 0.3);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color) 0%,
+          var(--primary-dark) 50%,
+          var(--primary-darker) 100%
+        );
+        color: var(--secondary-color);
+        position: relative;
+        overflow-x: hidden;
+        padding: 20px 0;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        position: relative;
+      }
+
+      /* 装饰性星星 */
+      .star {
+        position: absolute;
+        color: var(--secondary-color);
+        font-size: 16px;
+        opacity: 0.6;
+        animation: twinkle 2s infinite;
+      }
+
+      .star:nth-child(1) {
+        top: 12%;
+        left: 8%;
+        animation-delay: 0s;
+      }
+      .star:nth-child(2) {
+        top: 22%;
+        right: 12%;
+        animation-delay: 0.5s;
+      }
+      .star:nth-child(3) {
+        top: 55%;
+        left: 6%;
+        animation-delay: 1s;
+      }
+      .star:nth-child(4) {
+        bottom: 18%;
+        right: 8%;
+        animation-delay: 1.5s;
+      }
+
+      @keyframes twinkle {
+        0%,
+        100% {
+          opacity: 0.3;
+        }
+        50% {
+          opacity: 0.8;
+        }
+      }
+
+      /* CSS图标样式 */
+      .crown-icon {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        margin-right: 8px;
+        position: relative;
+      }
+
+      .crown-icon::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 14px;
+        height: 10px;
+        border: 2px solid var(--secondary-color);
+        border-bottom: 3px solid var(--secondary-color);
+        border-radius: 2px 2px 0 0;
+      }
+
+      .crown-icon::after {
+        content: '';
+        position: absolute;
+        top: 30%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-bottom: 6px solid var(--secondary-color);
+      }
+
+      .dice-icon {
+        display: inline-block;
+        margin-left: 8px;
+        font-size: 16px;
+        color: var(--secondary-color);
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.3s;
+      }
+
+      .dice-icon:hover {
+        opacity: 1;
+      }
+
+      .edit-icon {
+        display: inline-block;
+        margin-left: 5px;
+        font-size: 16px;
+        color: var(--secondary-color);
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.3s;
+      }
+
+      .edit-icon:hover {
+        opacity: 1;
+      }
+
+      .main-panel {
+        background: rgba(49, 58, 61, var(--panel-bg-opacity));
+        border: 2px solid var(--secondary-color);
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 0 30px var(--secondary-opacity-30);
+        backdrop-filter: blur(10px);
+      }
+
+      .title {
+        text-align: center;
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        background: linear-gradient(45deg, var(--secondary-color), #fff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .subtitle {
+        font-size: 14px;
+        line-height: 1.6;
+        text-align: center;
+        margin-bottom: 20px;
+        opacity: 0.9;
+        padding: 0 10px;
+      }
+
+      .form-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group.full-width {
+        grid-column: 1 / -1;
+      }
+
+      .form-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+        font-size: 14px;
+        font-weight: bold;
+      }
+
+      .form-label .icon {
+        margin-left: 8px;
+        cursor: pointer;
+        opacity: 0.7;
+        font-size: 16px;
+      }
+
+      .form-label .icon:hover {
+        opacity: 1;
+      }
+
+      .form-input,
+      .form-select {
+        padding: 8px 12px;
+        border: 1px solid var(--secondary-color);
+        border-radius: 8px;
+        background: rgba(49, 58, 61, 0.8);
+        color: var(--secondary-color);
+        font-size: 14px;
+      }
+
+      .form-input:focus,
+      .form-select:focus {
+        outline: none;
+        border-color: #fff;
+        box-shadow: 0 0 8px var(--secondary-opacity-30);
+      }
+
+      .custom-input {
+        display: none;
+        margin-top: 5px;
+      }
+
+      .custom-input.show {
+        display: block;
+      }
+
+      .options-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 8px;
+        margin-top: 5px;
+      }
+
+      .option-btn {
+        padding: 6px 10px;
+        border: 1px solid var(--secondary-color);
+        border-radius: 15px;
+        background: rgba(49, 58, 61, 0.8);
+        color: var(--secondary-color);
+        font-size: 12px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s;
+      }
+
+      .option-btn.selected {
+        background: var(--secondary-color);
+        color: var(--primary-color);
+        font-weight: bold;
+      }
+
+      .option-btn:hover {
+        background: var(--secondary-opacity-20);
+      }
+
+      .bottom-actions {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .action-btn {
+        padding: 12px 25px;
+        border: 2px solid var(--secondary-color);
+        border-radius: 25px;
+        background: rgba(49, 58, 61, 0.8);
+        color: var(--secondary-color);
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .action-btn:hover {
+        background: var(--secondary-color);
+        color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px var(--secondary-opacity-30);
+      }
+
+      .action-btn.primary {
+        background: linear-gradient(45deg, var(--secondary-color), #fff);
+        color: var(--primary-color);
+      }
+
+      .action-btn.primary:hover {
+        background: linear-gradient(45deg, #fff, var(--secondary-color));
+      }
+
+      .completion-text {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 14px;
+        opacity: 0.8;
+      }
+
+      .top-actions {
+        margin-bottom: 20px;
+        margin-top: 10px;
+      }
+
+      /* 调整其他自定义输入框宽度 */
+      .other-custom-section .form-input {
+        width: 100%;
+      }
+
+      /* 折叠选项样式 */
+      .collapsible-section {
+        margin-bottom: 15px;
+      }
+
+      .collapsible-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        padding: 8px 12px;
+        border: 1px solid var(--secondary-color);
+        border-radius: 8px;
+        background: rgba(49, 58, 61, 0.8);
+        margin-bottom: 5px;
+        transition: all 0.3s;
+      }
+
+      .collapsible-header:hover {
+        background: var(--secondary-opacity-10);
+      }
+
+      .collapsible-header.collapsed .expand-icon {
+        transform: rotate(-90deg);
+      }
+
+      .expand-icon {
+        font-size: 14px;
+        color: var(--secondary-color);
+        transition: transform 0.3s;
+      }
+
+      .collapsible-content {
+        max-height: 500px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        transition: max-height 0.3s ease-out;
+      }
+
+      .collapsible-content.collapsed {
+        max-height: 0;
+        overflow: hidden;
+      }
+
+      .selected-items {
+        display: none;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 5px;
+      }
+
+      .selected-items.show {
+        display: flex;
+      }
+
+      .selected-item {
+        padding: 3px 8px;
+        background: var(--secondary-color);
+        color: var(--primary-color);
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: bold;
+      }
+
+      /* 单选模式样式 */
+      .single-select .option-btn.selected {
+        background: linear-gradient(45deg, var(--secondary-color), #fff);
+        color: var(--primary-color);
+        font-weight: bold;
+        box-shadow: 0 2px 8px var(--secondary-opacity-40);
+      }
+
+      .single-select .option-btn:not(.selected):hover {
+        background: var(--secondary-opacity-10);
+      }
+
+      /* 系统原因选项样式 */
+      .system-reason-option {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        padding: 12px 15px;
+        min-height: auto;
+        line-height: 1.4;
+      }
+
+      .system-reason-title {
+        font-weight: bold;
+        font-size: 14px;
+        margin-bottom: 6px;
+        color: var(--secondary-color);
+      }
+
+      .system-reason-desc {
+        font-size: 11px;
+        color: var(--secondary-color);
+        opacity: 0.8;
+        margin-bottom: 6px;
+        line-height: 1.3;
+      }
+
+      .system-reason-balance {
+        font-size: 12px;
+        font-weight: bold;
+        color: #fff;
+        background: var(--secondary-opacity-20);
+        padding: 2px 8px;
+        border-radius: 8px;
+        align-self: flex-end;
+      }
+
+      .system-reason-balance.positive {
+        color: var(--success-color);
+      }
+
+      .system-reason-balance.negative {
+        color: var(--error-color);
+      }
+
+      .system-reason-balance.zero {
+        color: var(--muted-color);
+      }
+
+      /* 系统原因选项选中状态的特殊样式 */
+      .system-reason-option.selected {
+        border: 2px solid var(--secondary-color);
+        box-shadow: 0 4px 12px var(--secondary-opacity-30);
+      }
+
+      .system-reason-option.selected .system-reason-title {
+        color: #fff;
+      }
+
+      .system-reason-option.selected .system-reason-desc {
+        opacity: 1;
+        color: var(--accent-color);
+      }
+
+      .system-reason-option.selected .system-reason-balance {
+        background: var(--secondary-opacity-40);
+        box-shadow: 0 2px 4px var(--secondary-opacity-20);
+      }
+
+      /* 属性加点样式 */
+      .attribute-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        gap: 15px;
+      }
+
+      .attribute-label {
+        flex: 0 0 100px;
+        font-size: 14px;
+        font-weight: bold;
+        color: var(--secondary-color);
+      }
+
+      .attribute-controls {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .attribute-slider {
+        flex: 1;
+        height: 6px;
+        border-radius: 3px;
+        background: linear-gradient(to right, var(--secondary-opacity-30), var(--primary-opacity-30));
+        outline: none;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+
+      .attribute-slider::-webkit-slider-track {
+        height: 6px;
+        border-radius: 3px;
+        background: linear-gradient(to right, var(--secondary-opacity-30), var(--primary-opacity-30));
+      }
+
+      .attribute-slider::-moz-range-track {
+        height: 6px;
+        border-radius: 3px;
+        background: linear-gradient(to right, var(--secondary-opacity-30), var(--primary-opacity-30));
+        border: none;
+      }
+
+      .attribute-slider:hover {
+        opacity: 1;
+      }
+
+      .attribute-slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: linear-gradient(45deg, var(--secondary-color), #fff);
+        cursor: pointer;
+        box-shadow: 0 2px 6px var(--secondary-opacity-30);
+      }
+
+      .attribute-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: linear-gradient(45deg, var(--secondary-color), #fff);
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 6px var(--secondary-opacity-30);
+      }
+
+      .attribute-input {
+        width: 50px;
+        padding: 4px 8px;
+        border: 1px solid var(--secondary-color);
+        border-radius: 4px;
+        background: rgba(49, 58, 61, 0.8);
+        color: var(--secondary-color);
+        font-size: 12px;
+        text-align: center;
+      }
+
+      .attribute-input:focus {
+        outline: none;
+        border-color: #fff;
+        box-shadow: 0 0 4px var(--secondary-opacity-30);
+      }
+
+      .attribute-subtitle {
+        font-size: 12px;
+        color: var(--secondary-color);
+        opacity: 0.8;
+        margin-bottom: 15px;
+        text-align: center;
+        font-style: italic;
+      }
+
+      /* 说明页面样式 */
+      .instruction-panel {
+        text-align: center;
+        min-height: 600px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+      }
+
+      .instruction-content {
+        padding: 20px;
+      }
+
+      .important-steps {
+        margin-bottom: 40px;
+      }
+
+      .step-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 20px 0;
+        padding: 15px 25px;
+        border-radius: 15px;
+        border: 2px solid;
+        background: rgba(49, 58, 61, 0.8);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+      }
+
+      .step-item.urgent {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 20px var(--secondary-opacity-40);
+        animation: urgentGlow 2s ease-in-out infinite alternate;
+      }
+
+      .step-item.warning {
+        border-color: var(--error-color);
+        box-shadow: 0 0 15px rgba(248, 113, 113, 0.3);
+      }
+
+      @keyframes urgentGlow {
+        from {
+          box-shadow: 0 0 20px var(--secondary-opacity-40);
+        }
+        to {
+          box-shadow: 0 0 30px var(--primary-opacity-30);
+        }
+      }
+
+      .step-number {
+        width: 35px;
+        height: 35px;
+        background: linear-gradient(45deg, var(--secondary-color), #fff);
+        color: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+        margin-right: 15px;
+        flex-shrink: 0;
+      }
+
+      .step-icon {
+        font-size: 24px;
+        margin-right: 15px;
+        flex-shrink: 0;
+      }
+
+      .step-text {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--secondary-color);
+        text-align: left;
+        line-height: 1.4;
+      }
+
+      .step-text strong {
+        color: #fff;
+        background: linear-gradient(45deg, var(--secondary-color), #fff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .thank-you-section {
+        margin: 40px 0;
+        padding: 25px;
+        border: 1px solid var(--secondary-opacity-30);
+        border-radius: 15px;
+        background: var(--secondary-opacity-10);
+      }
+
+      .thank-you-text p {
+        margin: 8px 0;
+        font-size: 16px;
+        color: var(--secondary-color);
+        opacity: 0.9;
+      }
+
+      .author-signature {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid var(--secondary-opacity-30);
+      }
+
+      .signature-text {
+        font-size: 18px;
+        font-weight: bold;
+        background: linear-gradient(45deg, var(--secondary-color), #fff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .decoration-stars {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .star-decoration {
+        position: absolute;
+        font-size: 20px;
+        color: var(--secondary-color);
+        opacity: 0.6;
+        animation: twinkle 3s infinite;
+      }
+
+      .star-decoration:nth-child(1) {
+        top: 15%;
+        left: 10%;
+        animation-delay: 0s;
+      }
+
+      .star-decoration:nth-child(2) {
+        top: 25%;
+        right: 15%;
+        animation-delay: 0.6s;
+      }
+
+      .star-decoration:nth-child(3) {
+        top: 60%;
+        left: 8%;
+        animation-delay: 1.2s;
+      }
+
+      .star-decoration:nth-child(4) {
+        bottom: 20%;
+        right: 12%;
+        animation-delay: 1.8s;
+      }
+
+      .star-decoration:nth-child(5) {
+        bottom: 30%;
+        left: 20%;
+        animation-delay: 2.4s;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 600px) {
+        body {
+          padding: 10px 0;
+        }
+
+        .container {
+          padding: 15px;
+        }
+
+        .form-section {
+          grid-template-columns: 1fr;
+        }
+
+        .bottom-actions,
+        .top-actions {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .options-grid {
+          grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        }
+
+        .attribute-item {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 8px;
+        }
+
+        .attribute-label {
+          flex: none;
+          text-align: center;
+        }
+
+        .attribute-controls {
+          justify-content: center;
+        }
+
+        .system-reason-option {
+          margin-bottom: 10px;
+        }
+
+        .system-reason-desc {
+          font-size: 10px;
+          margin-bottom: 4px;
+        }
+
+        .system-reason-balance {
+          font-size: 11px;
+          padding: 1px 6px;
+        }
+
+        /* 说明页面响应式 */
+        .instruction-panel {
+          min-height: 500px;
+          padding: 15px;
+        }
+
+        .step-item {
+          margin: 15px 0;
+          padding: 12px 20px;
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .step-number {
+          width: 30px;
+          height: 30px;
+          font-size: 16px;
+          margin-right: 0;
+          margin-bottom: 8px;
+        }
+
+        .step-icon {
+          margin-right: 0;
+          margin-bottom: 8px;
+        }
+
+        .step-text {
+          font-size: 14px;
+          text-align: center;
+        }
+
+        .step-text strong {
+          font-size: 16px;
+        }
+
+        .thank-you-section {
+          margin: 30px 0;
+          padding: 20px;
+        }
+
+        .signature-text {
+          font-size: 16px;
+        }
+      }
+
+      /* YAML模态窗口样式 */
+      .yaml-modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        backdrop-filter: blur(5px);
+      }
+
+      .yaml-modal-content {
+        background: var(--panel-bg);
+        margin: 5% auto;
+        padding: 0;
+        border: 2px solid var(--secondary-color);
+        border-radius: 20px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow: hidden;
+        box-shadow: 0 0 30px var(--secondary-opacity-30);
+        backdrop-filter: blur(10px);
+      }
+
+      .yaml-modal-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid var(--secondary-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(49, 58, 61, var(--panel-bg-opacity));
+      }
+
+      .yaml-modal-header h2 {
+        margin: 0;
+        color: var(--secondary-color);
+        font-size: 20px;
+        font-weight: bold;
+        background: linear-gradient(45deg, var(--secondary-color), #fff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .yaml-modal-close {
+        color: var(--secondary-color);
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 1;
+        transition: all 0.3s;
+      }
+
+      .yaml-modal-close:hover {
+        color: #fff;
+        transform: scale(1.1);
+      }
+
+      .yaml-modal-body {
+        padding: 20px 25px;
+        background: rgba(49, 58, 61, var(--panel-bg-opacity));
+      }
+
+      #yamlOutput {
+        width: 100%;
+        height: 400px;
+        background: rgba(49, 58, 61, 0.8);
+        border: 1px solid var(--secondary-color);
+        border-radius: 8px;
+        color: var(--secondary-color);
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        padding: 15px;
+        resize: vertical;
+        margin-bottom: 15px;
+        line-height: 1.4;
+      }
+
+      #yamlOutput:focus {
+        outline: none;
+        border-color: #fff;
+        box-shadow: 0 0 8px var(--secondary-opacity-30);
+      }
+
+      .yaml-modal-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+      }
+
+      .yaml-modal-actions .action-btn {
+        min-width: 150px;
+      }
+
+      /* 响应式设计 - YAML模态窗口 */
+      @media (max-width: 600px) {
+        .yaml-modal-content {
+          margin: 10% auto;
+          width: 95%;
+          max-height: 85vh;
+        }
+
+        .yaml-modal-header {
+          padding: 15px 20px;
+        }
+
+        .yaml-modal-header h2 {
+          font-size: 18px;
+        }
+
+        .yaml-modal-close {
+          font-size: 24px;
+        }
+
+        .yaml-modal-body {
+          padding: 15px 20px;
+        }
+
+        #yamlOutput {
+          height: 300px;
+          font-size: 12px;
+          padding: 10px;
+        }
+
+        .yaml-modal-actions {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .yaml-modal-actions .action-btn {
+          width: 100%;
+          min-width: auto;
+        }
+      }
+
+      /* 字段验证错误样式 */
+      .form-group.error .form-input,
+      .form-group.error .form-select {
+        border-color: var(--error-color);
+        box-shadow: 0 0 8px rgba(248, 113, 113, 0.3);
+      }
+
+      .field-error {
+        color: var(--error-color);
+        font-size: 12px;
+        margin-top: 5px;
+        display: none;
+      }
+
+      .form-group.error .field-error {
+        display: block;
+      }
+
+      .required-indicator {
+        color: var(--error-color);
+        margin-left: 2px;
+        font-weight: bold;
+      }
+
+      /* 返回按钮样式 */
+      .back-btn {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(49, 58, 61, var(--panel-bg-opacity));
+        border: 2px solid var(--secondary-color);
+        border-radius: 15px;
+        padding: 10px 20px;
+        color: var(--secondary-color);
+        text-decoration: none;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        z-index: 1000;
+        box-shadow: 0 2px 10px var(--secondary-opacity-20);
+      }
+
+      .back-btn:hover {
+        background: var(--secondary-color);
+        color: var(--primary-color);
+        transform: translateX(-5px);
+      }
+
+      /* 世界背景显示样式 */
+      .world-header {
+        text-align: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 2px solid var(--secondary-color);
+        border-radius: 15px;
+        background: rgba(49, 58, 61, 0.3);
+        backdrop-filter: blur(5px);
+      }
+
+      .world-icon {
+        font-size: 32px;
+        margin-right: 10px;
+        filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+      }
+
+      .world-name {
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--secondary-color);
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 返回按钮 -->
+    <a href="index.html" class="back-btn" id="backBtn">← 返回世界选择</a>
+    
+    <div class="star">✨</div>
+    <div class="star">⭐</div>
+    <div class="star">✨</div>
+    <div class="star">⭐</div>
+
+    <div class="container">
+      <div class="main-panel">
+        <!-- 世界背景显示 -->
+        <div class="world-header" id="worldHeader">
+          <span class="world-icon" id="worldIcon">🏙️</span>
+          <span class="world-name" id="worldName">现代都市</span>
+        </div>
+        
+        <h1 class="title" id="pageTitle">✨ 角色生成器 ✨</h1>
+
+        <!-- 顶部快捷按钮 -->
+        <div class="bottom-actions top-actions">
+          <button class="action-btn" onclick="randomizeAll()">📚 随机生成全部</button>
+          <button class="action-btn primary" onclick="confirmCreate()">✨ 生成角色数据 ✨</button>
+        </div>
+
+        <!-- 基本信息 -->
+        <div class="form-section">
+          <div class="form-group full-width">
+            <div class="form-label">
+              <span class="crown-icon"></span>
+              核心身份信息
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              姓名<span class="required-indicator">*</span>
+              <span class="icon edit-icon" onclick="editCustom('realName')">🖋</span>
+            </div>
+            <input type="text" class="form-input" id="realName" placeholder="输入用户姓名" />
+            <div class="field-error" id="realNameError">请输入姓名，这是必填项</div>
+            <input type="text" class="form-input custom-input" id="realNameCustom" placeholder="自定义姓名" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              年龄
+              <span class="icon dice-icon" onclick="randomizeField('age')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('age')">🖋</span>
+            </div>
+            <input type="number" class="form-input" id="age" placeholder="输入年龄" />
+            <input type="text" class="form-input custom-input" id="ageCustom" placeholder="自定义年龄" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              生理性别
+              <span class="icon dice-icon" onclick="randomizeField('biologicalGender')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('biologicalGender')">🖋</span>
+            </div>
+            <select class="form-select" id="biologicalGender">
+              <option value="">选择性别</option>
+              <option value="女">女</option>
+              <option value="男">男</option>
+              <option value="扶她">扶她</option>
+              <option value="双性">双性</option>
+              <option value="无性">无性</option>
+            </select>
+            <input
+              type="text"
+              class="form-input custom-input"
+              id="biologicalGenderCustom"
+              placeholder="自定义生理性别"
+            />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              性取向
+              <span class="icon dice-icon" onclick="randomizeField('sexualOrientation')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('sexualOrientation')">🖋</span>
+            </div>
+            <select class="form-select" id="sexualOrientation">
+              <option value="">选择性取向</option>
+              <option value="异性恋">异性恋</option>
+              <option value="同性恋">同性恋</option>
+              <option value="四爱">四爱</option>
+              <option value="双性恋">双性恋</option>
+              <option value="泛性恋">泛性恋</option>
+              <option value="无爱者">无爱者</option>
+              <option value="无性恋">无性恋</option>
+            </select>
+            <input
+              type="text"
+              class="form-input custom-input"
+              id="sexualOrientationCustom"
+              placeholder="自定义性取向"
+            />
+          </div>
+
+          <!-- 正面性格 -->
+          <div class="form-group full-width">
+            <div class="collapsible-section" id="positiveTraitsSection">
+              <div class="collapsible-header collapsed" onclick="toggleCollapse('positiveTraits')">
+                <div>
+                  <span>正面性格</span>
+                  <span class="icon dice-icon" onclick="event.stopPropagation(); randomizeField('positiveTraits')"
+                    >⚅</span
+                  >
+                  <span class="icon edit-icon" onclick="event.stopPropagation(); editCustom('positiveTraits')">🖋</span>
+                </div>
+                <span class="expand-icon">▼</span>
+              </div>
+              <div class="selected-items" id="positiveTraitsSelected"></div>
+              <div class="collapsible-content collapsed" id="positiveTraitsContent">
+                <div class="options-grid" id="positiveTraitsGrid">
+                  <!-- 选项将由JavaScript动态生成 -->
+                </div>
+                <input
+                  type="text"
+                  class="form-input custom-input"
+                  id="positiveTraitsCustom"
+                  placeholder="自定义正面性格（用逗号分隔）"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 负面性格 -->
+          <div class="form-group full-width">
+            <div class="collapsible-section" id="negativeTraitsSection">
+              <div class="collapsible-header collapsed" onclick="toggleCollapse('negativeTraits')">
+                <div>
+                  <span>负面性格</span>
+                  <span class="icon dice-icon" onclick="event.stopPropagation(); randomizeField('negativeTraits')"
+                    >⚅</span
+                  >
+                  <span class="icon edit-icon" onclick="event.stopPropagation(); editCustom('negativeTraits')">🖋</span>
+                </div>
+                <span class="expand-icon">▼</span>
+              </div>
+              <div class="selected-items" id="negativeTraitsSelected"></div>
+              <div class="collapsible-content collapsed" id="negativeTraitsContent">
+                <div class="options-grid" id="negativeTraitsGrid">
+                  <!-- 选项将由JavaScript动态生成 -->
+                </div>
+                <input
+                  type="text"
+                  class="form-input custom-input"
+                  id="negativeTraitsCustom"
+                  placeholder="自定义负面性格（用逗号分隔）"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 感情观 -->
+          <div class="form-group full-width">
+            <div class="collapsible-section" id="loveViewsSection">
+              <div class="collapsible-header collapsed" onclick="toggleCollapse('loveViews')">
+                <div>
+                  <span>感情观</span>
+                  <span class="icon dice-icon" onclick="event.stopPropagation(); randomizeField('loveViews')">⚅</span>
+                  <span class="icon edit-icon" onclick="event.stopPropagation(); editCustom('loveViews')">🖋</span>
+                </div>
+                <span class="expand-icon">▼</span>
+              </div>
+              <div class="selected-items" id="loveViewsSelected"></div>
+              <div class="collapsible-content collapsed" id="loveViewsContent">
+                <div class="options-grid" id="loveViewsGrid">
+                  <!-- 选项将由JavaScript动态生成 -->
+                </div>
+                <input
+                  type="text"
+                  class="form-input custom-input"
+                  id="loveViewsCustom"
+                  placeholder="自定义感情观（用逗号分隔）"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 社交风格 -->
+          <div class="form-group full-width">
+            <div class="collapsible-section" id="socialStyleSection">
+              <div class="collapsible-header collapsed" onclick="toggleCollapse('socialStyle')">
+                <div>
+                  <span>社交风格</span>
+                  <span class="icon dice-icon" onclick="event.stopPropagation(); randomizeField('socialStyle')">⚅</span>
+                  <span class="icon edit-icon" onclick="event.stopPropagation(); editCustom('socialStyle')">🖋</span>
+                </div>
+                <span class="expand-icon">▼</span>
+              </div>
+              <div class="selected-items" id="socialStyleSelected"></div>
+              <div class="collapsible-content collapsed" id="socialStyleContent">
+                <div class="options-grid" id="socialStyleGrid">
+                  <!-- 选项将由JavaScript动态生成 -->
+                </div>
+                <input
+                  type="text"
+                  class="form-input custom-input"
+                  id="socialStyleCustom"
+                  placeholder="自定义社交风格（用逗号分隔）"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 外貌设定 -->
+        <div class="form-section">
+          <div class="form-group full-width">
+            <div class="form-label">
+              <span class="crown-icon"></span>
+              外貌设定
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              身高
+              <span class="icon dice-icon" onclick="randomizeField('height')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('height')">🖋</span>
+            </div>
+            <input type="number" class="form-input" id="height" placeholder="输入身高" />
+            <div style="font-size: 12px; color: var(--secondary-color); opacity: 0.7; margin-top: 2px">cm</div>
+            <input type="text" class="form-input custom-input" id="heightCustom" placeholder="自定义身高" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              体重
+              <span class="icon dice-icon" onclick="randomizeField('weight')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('weight')">🖋</span>
+            </div>
+            <input type="number" class="form-input" id="weight" placeholder="输入体重" />
+            <div style="font-size: 12px; color: var(--secondary-color); opacity: 0.7; margin-top: 2px">kg</div>
+            <input type="text" class="form-input custom-input" id="weightCustom" placeholder="自定义体重" />
+          </div>
+
+          <!-- 面貌 -->
+          <div class="form-group full-width">
+            <div class="collapsible-section" id="faceSection">
+              <div class="collapsible-header collapsed" onclick="toggleCollapse('face')">
+                <div>
+                  <span>面貌</span>
+                  <span class="icon dice-icon" onclick="event.stopPropagation(); randomizeField('face')">⚅</span>
+                  <span class="icon edit-icon" onclick="event.stopPropagation(); editCustom('face')">🖋</span>
+                </div>
+                <span class="expand-icon">▼</span>
+              </div>
+              <div class="selected-items" id="faceSelected"></div>
+              <div class="collapsible-content collapsed" id="faceContent">
+                <div class="options-grid" id="faceGrid">
+                  <!-- 选项将由JavaScript动态生成 -->
+                </div>
+                <input
+                  type="text"
+                  class="form-input custom-input"
+                  id="faceCustom"
+                  placeholder="自定义面貌（用逗号分隔）"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 身材 -->
+          <div class="form-group full-width">
+            <div class="collapsible-section" id="bodySection">
+              <div class="collapsible-header collapsed" onclick="toggleCollapse('body')">
+                <div>
+                  <span>身材</span>
+                  <span class="icon dice-icon" onclick="event.stopPropagation(); randomizeField('body')">⚅</span>
+                  <span class="icon edit-icon" onclick="event.stopPropagation(); editCustom('body')">🖋</span>
+                </div>
+                <span class="expand-icon">▼</span>
+              </div>
+              <div class="selected-items" id="bodySelected"></div>
+              <div class="collapsible-content collapsed" id="bodyContent">
+                <div class="options-grid" id="bodyGrid">
+                  <!-- 选项将由JavaScript动态生成 -->
+                </div>
+                <input
+                  type="text"
+                  class="form-input custom-input"
+                  id="bodyCustom"
+                  placeholder="自定义身材（用逗号分隔）"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              肤色
+              <span class="icon dice-icon" onclick="randomizeField('skinColor')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('skinColor')">🖋</span>
+            </div>
+            <select class="form-select" id="skinColor">
+              <option value="">选择肤色</option>
+              <option value="冷白">冷白</option>
+              <option value="暖白">暖白</option>
+              <option value="偏黄">偏黄</option>
+              <option value="小麦色">小麦色</option>
+              <option value="蜜糖色">蜜糖色</option>
+              <option value="深棕色">深棕色</option>
+              <option value="透明感白">透明感白</option>
+              <option value="病态苍白">病态苍白</option>
+              <option value="黑皮">黑皮</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="skinColorCustom" placeholder="自定义肤色" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              瞳色
+              <span class="icon dice-icon" onclick="randomizeField('eyeColor')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('eyeColor')">🖋</span>
+            </div>
+            <select class="form-select" id="eyeColor">
+              <option value="">选择瞳色</option>
+              <option value="黑色">黑色</option>
+              <option value="白色">白色</option>
+              <option value="棕色">棕色</option>
+              <option value="灰色">灰色</option>
+              <option value="酒红色">酒红色</option>
+              <option value="亮红色">亮红色</option>
+              <option value="紫色">紫色</option>
+              <option value="蓝色">蓝色</option>
+              <option value="绿色">绿色</option>
+              <option value="银色">银色</option>
+              <option value="烟紫色">烟紫色</option>
+              <option value="浅紫">浅紫</option>
+              <option value="浅粉色">浅粉色</option>
+              <option value="玫瑰色">玫瑰色</option>
+              <option value="雾蓝灰">雾蓝灰</option>
+              <option value="浅海蓝">浅海蓝</option>
+              <option value="墨绿色">墨绿色</option>
+              <option value="灰绿色">灰绿色</option>
+              <option value="灰蓝色">灰蓝色</option>
+              <option value="天蓝色">天蓝色</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="eyeColorCustom" placeholder="自定义瞳色" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              面部特征
+              <span class="icon dice-icon" onclick="randomizeField('facialFeatures')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('facialFeatures')">🖋</span>
+            </div>
+            <select class="form-select" id="facialFeatures">
+              <option value="">选择面部特征</option>
+              <option value="凤眼">凤眼</option>
+              <option value="圆眼">圆眼</option>
+              <option value="桃花眼">桃花眼</option>
+              <option value="单眼皮">单眼皮</option>
+              <option value="内双">内双</option>
+              <option value="狗狗下垂眼">狗狗下垂眼</option>
+              <option value="长睫毛">长睫毛</option>
+              <option value="微笑唇">微笑唇</option>
+              <option value="薄唇">薄唇</option>
+              <option value="厚唇">厚唇</option>
+              <option value="小翘鼻">小翘鼻</option>
+              <option value="高鼻梁">高鼻梁</option>
+              <option value="美人痣">美人痣</option>
+              <option value="泪痣">泪痣</option>
+              <option value="眉心痣">眉心痣</option>
+              <option value="酒窝">酒窝</option>
+              <option value="梨涡">梨涡</option>
+              <option value="雀斑">雀斑</option>
+              <option value="美人尖">美人尖</option>
+              <option value="婴儿肥">婴儿肥</option>
+              <option value="眉毛有疤">眉毛有疤</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="facialFeaturesCustom" placeholder="自定义面部特征" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              发色
+              <span class="icon dice-icon" onclick="randomizeField('hairColor')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('hairColor')">🖋</span>
+            </div>
+            <select class="form-select" id="hairColor">
+              <option value="">选择发色</option>
+              <option value="黑色">黑色</option>
+              <option value="白色">白色</option>
+              <option value="棕色">棕色</option>
+              <option value="玫瑰金">玫瑰金</option>
+              <option value="酒红色">酒红色</option>
+              <option value="亮红色">亮红色</option>
+              <option value="紫色">紫色</option>
+              <option value="蓝色">蓝色</option>
+              <option value="绿色">绿色</option>
+              <option value="奶奶灰">奶奶灰</option>
+              <option value="银色">银色</option>
+              <option value="深灰色">深灰色</option>
+              <option value="烟灰色">烟灰色</option>
+              <option value="浅紫">浅紫</option>
+              <option value="浅粉色">浅粉色</option>
+              <option value="玫瑰色">玫瑰色</option>
+              <option value="雾蓝灰">雾蓝灰</option>
+              <option value="浅海蓝">浅海蓝</option>
+              <option value="渐变色">渐变色</option>
+              <option value="挑染">挑染</option>
+              <option value="挂耳染">挂耳染</option>
+              <option value="发尾染">发尾染</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="hairColorCustom" placeholder="自定义发色" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              发型
+              <span class="icon dice-icon" onclick="randomizeField('hairStyle')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('hairStyle')">🖋</span>
+            </div>
+            <select class="form-select" id="hairStyle">
+              <option value="">选择发型</option>
+              <option value="短发">短发</option>
+              <option value="中长发">中长发</option>
+              <option value="长发">长发</option>
+              <option value="及肩长发">及肩长发</option>
+              <option value="及腰长发">及腰长发</option>
+              <option value="直发">直发</option>
+              <option value="卷发">卷发</option>
+              <option value="板寸">板寸</option>
+              <option value="前刺">前刺</option>
+              <option value="微分碎盖">微分碎盖</option>
+              <option value="背头">背头</option>
+              <option value="中分">中分</option>
+              <option value="狼尾发型">狼尾发型</option>
+              <option value="半扎发">半扎发</option>
+              <option value="高马尾">高马尾</option>
+              <option value="低马尾">低马尾</option>
+              <option value="丸子头">丸子头</option>
+              <option value="长直发">长直发</option>
+              <option value="大波浪长发">大波浪长发</option>
+              <option value="双马尾">双马尾</option>
+              <option value="单侧编发">单侧编发</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="hairStyleCustom" placeholder="自定义发型" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              日常穿搭偏好
+              <span class="icon dice-icon" onclick="randomizeField('dressStyle')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('dressStyle')">🖋</span>
+            </div>
+            <select class="form-select" id="dressStyle">
+              <option value="">选择穿搭风格</option>
+              <option value="温柔淑女风">温柔淑女风</option>
+              <option value="活泼可爱风">活泼可爱风</option>
+              <option value="法式优雅">法式优雅</option>
+              <option value="韩系潮流风">韩系潮流风</option>
+              <option value="韩系女团风">韩系女团风</option>
+              <option value="欧美火辣风">欧美火辣风</option>
+              <option value="职场通勤风">职场通勤风</option>
+              <option value="知识分子风">知识分子风</option>
+              <option value="邻家简约风">邻家简约风</option>
+              <option value="森系文艺">森系文艺</option>
+              <option value="简约盐系">简约盐系</option>
+              <option value="慵懒随性">慵懒随性</option>
+              <option value="纯欲风">纯欲风</option>
+              <option value="Y2K复古风">Y2K复古风</option>
+              <option value="新中式风格">新中式风格</option>
+              <option value="亚文化辣妹风">亚文化辣妹风</option>
+              <option value="洛丽塔">洛丽塔</option>
+              <option value="高定礼服">高定礼服</option>
+              <option value="健身房运动风">健身房运动风</option>
+              <option value="户外机能风">户外机能风</option>
+              <option value="名媛风">名媛风</option>
+              <option value="性感御姐风">性感御姐风</option>
+              <option value="韩系男团风">韩系男团风</option>
+              <option value="高定西装">高定西装</option>
+              <option value="商务休闲">商务休闲</option>
+              <option value="美式休闲">美式休闲</option>
+              <option value="日系休闲">日系休闲</option>
+              <option value="简约基础款">简约基础款</option>
+              <option value="街头潮流">街头潮流</option>
+              <option value="高街风格">高街风格</option>
+              <option value="嘻哈说唱">嘻哈说唱</option>
+              <option value="工装风格">工装风格</option>
+              <option value="户外运动风">户外运动风</option>
+              <option value="雅痞绅士风">雅痞绅士风</option>
+              <option value="书卷气风格">书卷气风格</option>
+              <option value="老钱风">老钱风</option>
+              <option value="复古港风">复古港风</option>
+              <option value="精致学院风">精致学院风</option>
+              <option value="居家舒适风">居家舒适风</option>
+              <option value="衬衣">衬衣</option>
+              <option value="毛衣">毛衣</option>
+              <option value="吊带裙">吊带裙</option>
+              <option value="背心热裤">背心热裤</option>
+              <option value="风衣">风衣</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="dressStyleCustom" placeholder="自定义穿搭风格" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              标志性配饰
+              <span class="icon dice-icon" onclick="randomizeField('accessories')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('accessories')">🖋</span>
+            </div>
+            <select class="form-select" id="accessories">
+              <option value="">选择配饰</option>
+              <option value="框架眼镜">框架眼镜</option>
+              <option value="金属细框眼镜">金属细框眼镜</option>
+              <option value="耳环">耳环</option>
+              <option value="长耳坠">长耳坠</option>
+              <option value="耳钉">耳钉</option>
+              <option value="项链">项链</option>
+              <option value="金属链条">金属链条</option>
+              <option value="手表">手表</option>
+              <option value="戒指">戒指</option>
+              <option value="银戒指">银戒指</option>
+              <option value="手链">手链</option>
+              <option value="手镯">手镯</option>
+              <option value="唇钉">唇钉</option>
+              <option value="眉钉">眉钉</option>
+              <option value="乳钉">乳钉</option>
+              <option value="舌钉">舌钉</option>
+              <option value="领带">领带</option>
+              <option value="胸针">胸针</option>
+              <option value="袖扣">袖扣</option>
+              <option value="棒球帽">棒球帽</option>
+              <option value="渔夫帽">渔夫帽</option>
+              <option value="口罩">口罩</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="accessoriesCustom" placeholder="自定义配饰" />
+          </div>
+        </div>
+
+        <!-- 其他设定 -->
+        <div class="form-section">
+          <div class="form-group full-width">
+            <div class="form-label">
+              <span class="crown-icon"></span>
+              其他设定
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              病症
+              <span class="icon dice-icon" onclick="randomizeField('illness')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('illness')">🖋</span>
+            </div>
+            <select class="form-select" id="illness">
+              <option value="">选择病症</option>
+              <option value="胃病">胃病</option>
+              <option value="偏头痛">偏头痛</option>
+              <option value="失眠症">失眠症</option>
+              <option value="抑郁症">抑郁症</option>
+              <option value="焦虑症">焦虑症</option>
+              <option value="躁郁症">躁郁症</option>
+              <option value="PTSD">PTSD</option>
+              <option value="斯德哥尔摩综合征">斯德哥尔摩综合征</option>
+              <option value="ADHD">ADHD</option>
+              <option value="社交恐惧症">社交恐惧症</option>
+              <option value="幽闭恐惧症">幽闭恐惧症</option>
+              <option value="哮喘">哮喘</option>
+              <option value="心脏病">心脏病</option>
+              <option value="过敏体质">过敏体质</option>
+              <option value="厌食症">厌食症</option>
+              <option value="暴食症">暴食症</option>
+              <option value="强迫症">强迫症</option>
+              <option value="洁癖">洁癖</option>
+              <option value="恐高">恐高</option>
+              <option value="脸盲">脸盲</option>
+              <option value="选择困难症">选择困难症</option>
+              <option value="人格分裂">人格分裂</option>
+              <option value="情感隔离">情感隔离</option>
+              <option value="重度视力障碍">重度视力障碍</option>
+              <option value="眼盲">眼盲</option>
+              <option value="耳聋">耳聋</option>
+              <option value="哑巴">哑巴</option>
+              <option value="下肢瘫痪">下肢瘫痪</option>
+              <option value="勃起障碍">勃起障碍</option>
+              <option value="无法射精">无法射精</option>
+              <option value="性瘾">性瘾</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="illnessCustom" placeholder="自定义病症" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              人物特点
+              <span class="icon dice-icon" onclick="randomizeField('characterTrait')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('characterTrait')">🖋</span>
+            </div>
+            <select class="form-select" id="characterTrait">
+              <option value="">选择特点</option>
+              <option value="推眼镜">推眼镜</option>
+              <option value="思考时会轻咬下唇">思考时会轻咬下唇</option>
+              <option value="与人交谈时身体会微微前倾">与人交谈时身体会微微前倾</option>
+              <option value="把玩物品">把玩物品</option>
+              <option value="按太阳穴">按太阳穴</option>
+              <option value="手插兜">手插兜</option>
+              <option value="口头禅">口头禅</option>
+              <option value="把'谢谢'挂在嘴边">把"谢谢"挂在嘴边</option>
+              <option value="喜欢说叠词">喜欢说叠词</option>
+              <option value="港台腔">港台腔</option>
+              <option value="北京腔">北京腔</option>
+              <option value="东北话">东北话</option>
+              <option value="粤语">粤语</option>
+              <option value="说话时喜欢配上肢体接触">说话时喜欢配上肢体接触</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="characterTraitCustom" placeholder="自定义特点" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              体味
+              <span class="icon dice-icon" onclick="randomizeField('bodyScent')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('bodyScent')">🖋</span>
+            </div>
+            <select class="form-select" id="bodyScent">
+              <option value="">选择体味</option>
+              <option value="无特殊气味">无特殊气味</option>
+              <option value="清淡的皂香">清淡的皂香</option>
+              <option value="清爽的洗衣液味">清爽的洗衣液味</option>
+              <option value="阳光晒过的味道">阳光晒过的味道</option>
+              <option value="牛奶味">牛奶味</option>
+              <option value="奶糖味">奶糖味</option>
+              <option value="淡淡的花香味">淡淡的花香味</option>
+              <option value="雨后森林的气息">雨后森林的气息</option>
+              <option value="常用的香水味">常用的香水味</option>
+              <option value="木质香">木质香</option>
+              <option value="海洋调香">海洋调香</option>
+              <option value="柑橘香">柑橘香</option>
+              <option value="荷尔蒙气息强烈">荷尔蒙气息强烈</option>
+              <option value="汗味">汗味</option>
+              <option value="烟草味">烟草味</option>
+              <option value="咖啡香">咖啡香</option>
+              <option value="茶香">茶香</option>
+              <option value="消毒水味">消毒水味</option>
+              <option value="书墨味">书墨味</option>
+              <option value="冷冽的空气味">冷冽的空气味</option>
+              <option value="甜腻的糕点味">甜腻的糕点味</option>
+              <option value="微弱的血腥味">微弱的血腥味</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="bodyScentCustom" placeholder="自定义体味" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              身体敏感度
+              <span class="icon dice-icon" onclick="randomizeField('sensitivity')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('sensitivity')">🖋</span>
+            </div>
+            <select class="form-select" id="sensitivity">
+              <option value="">选择敏感度</option>
+              <option value="身体迟钝">身体迟钝</option>
+              <option value="普通敏感">普通敏感</option>
+              <option value="较为敏感">较为敏感</option>
+              <option value="很敏感">很敏感</option>
+              <option value="全身都是敏感点">全身都是敏感点</option>
+              <option value="轻触即可唤起快感">轻触即可唤起快感</option>
+              <option value="痛感与快感界限模糊">痛感与快感界限模糊</option>
+              <option value="触碰就高潮">触碰就高潮</option>
+              <option value="多重高潮体质">多重高潮体质</option>
+              <option value="感觉过载(易被过度刺激)">感觉过载(易被过度刺激)</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="sensitivityCustom" placeholder="自定义敏感度" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              过往性经历
+              <span class="icon dice-icon" onclick="randomizeField('sexualHistory')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('sexualHistory')">🖋</span>
+            </div>
+            <select class="form-select" id="sexualHistory">
+              <option value="">选择性经历</option>
+              <option value="无性经验">无性经验</option>
+              <option value="仅有理论知识">仅有理论知识</option>
+              <option value="仅有一次经验">仅有一次经验</option>
+              <option value="经验很少">经验很少</option>
+              <option value="只有固定的长期伴侣">只有固定的长期伴侣</option>
+              <option value="经验适中">经验适中</option>
+              <option value="有过数位伴侣">有过数位伴侣</option>
+              <option value="经验丰富">经验丰富</option>
+              <option value="性观念开放">性观念开放</option>
+              <option value="性关系混乱">性关系混乱</option>
+              <option value="有BDSM经验">有BDSM经验</option>
+              <option value="仅有同性经验">仅有同性经验</option>
+              <option value="仅有异性经验">仅有异性经验</option>
+              <option value="双性经验皆有">双性经验皆有</option>
+              <option value="有过非自愿性行为">有过非自愿性行为</option>
+              <option value="曾嫖娼">曾嫖娼</option>
+              <option value="当过娼">当过娼</option>
+              <option value="有为了资源或目的的性经历">有为了资源或目的的性经历</option>
+              <option value="曾有经验但很久没有性生活">曾有经验但很久没有性生活</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="sexualHistoryCustom" placeholder="自定义性经历" />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              性欲指数
+              <span class="icon dice-icon" onclick="randomizeField('libido')">⚅</span>
+              <span class="icon edit-icon" onclick="editCustom('libido')">🖋</span>
+            </div>
+            <select class="form-select" id="libido">
+              <option value="">选择性欲指数</option>
+              <option value="禁欲">禁欲</option>
+              <option value="无性欲">无性欲</option>
+              <option value="极低性欲">极低性欲</option>
+              <option value="低于普通">低于普通</option>
+              <option value="普通性欲">普通性欲</option>
+              <option value="高于平均">高于平均</option>
+              <option value="强烈性欲">强烈性欲</option>
+              <option value="极高性欲">极高性欲</option>
+              <option value="时时刻刻都有极高性欲">时时刻刻都有极高性欲</option>
+            </select>
+            <input type="text" class="form-input custom-input" id="libidoCustom" placeholder="自定义性欲指数" />
+          </div>
+
+          <!-- 性癖 -->
+          <div class="form-group full-width">
+            <div class="collapsible-section" id="kinksSection">
+              <div class="collapsible-header collapsed" onclick="toggleCollapse('kinks')">
+                <div>
+                  <span>性癖</span>
+                  <span class="icon dice-icon" onclick="event.stopPropagation(); randomizeField('kinks')">⚅</span>
+                  <span class="icon edit-icon" onclick="event.stopPropagation(); editCustom('kinks')">🖋</span>
+                </div>
+                <span class="expand-icon">▼</span>
+              </div>
+              <div class="selected-items" id="kinksSelected"></div>
+              <div class="collapsible-content collapsed" id="kinksContent">
+                <div class="options-grid" id="kinksGrid">
+                  <div class="option-btn" data-value="支配他人">支配他人</div>
+                  <div class="option-btn" data-value="捆绑他人">捆绑他人</div>
+                  <div class="option-btn" data-value="掌掴或鞭打他人">掌掴或鞭打他人</div>
+                  <div class="option-btn" data-value="言语羞辱他人">言语羞辱他人</div>
+                  <div class="option-btn" data-value="精神控制">精神控制</div>
+                  <div class="option-btn" data-value="命令与服从">命令与服从</div>
+                  <div class="option-btn" data-value="设计并控制情节">设计并控制情节</div>
+                  <div class="option-btn" data-value="将伴侣当作宠物饲养">将伴侣当作宠物饲养</div>
+                  <div class="option-btn" data-value="让伴侣嫉妒">让伴侣嫉妒</div>
+                  <div class="option-btn" data-value="通过任务或考验控制伴侣">通过任务或考验控制伴侣</div>
+                  <div class="option-btn" data-value="对伴侣进行身体崇拜">对伴侣进行身体崇拜</div>
+                  <div class="option-btn" data-value="夺取伴侣的感官(如蒙眼)">夺取伴侣的感官(如蒙眼)</div>
+                  <div class="option-btn" data-value="制造并欣赏伴侣的痛苦或快乐表情">
+                    制造并欣赏伴侣的痛苦或快乐表情
+                  </div>
+                  <div class="option-btn" data-value="对伴侣进行强制高潮">对伴侣进行强制高潮</div>
+                  <div class="option-btn" data-value="决定伴侣的衣着">决定伴侣的衣着</div>
+                  <div class="option-btn" data-value="在伴侣身上留下印记(如吻痕)">在伴侣身上留下印记(如吻痕)</div>
+                  <div class="option-btn" data-value="审问式对话">审问式对话</div>
+                  <div class="option-btn" data-value="剃毛">剃毛</div>
+                  <div class="option-btn" data-value="灌肠">灌肠</div>
+                  <div class="option-btn" data-value="禁止高潮">禁止高潮</div>
+                  <div class="option-btn" data-value="臣服于人">臣服于人</div>
+                  <div class="option-btn" data-value="被捆绑">被捆绑</div>
+                  <div class="option-btn" data-value="被掌掴或被鞭打">被掌掴或被鞭打</div>
+                  <div class="option-btn" data-value="被言语羞辱">被言语羞辱</div>
+                  <div class="option-btn" data-value="被精神控制">被精神控制</div>
+                  <div class="option-btn" data-value="听从命令与安排">听从命令与安排</div>
+                  <div class="option-btn" data-value="服从情节安排">服从情节安排</div>
+                  <div class="option-btn" data-value="作为宠物被饲养">作为宠物被饲养</div>
+                  <div class="option-btn" data-value="为伴侣而嫉妒">为伴侣而嫉妒</div>
+                  <div class="option-btn" data-value="通过完成任务获得奖赏">通过完成任务获得奖赏</div>
+                  <div class="option-btn" data-value="身体被崇拜">身体被崇拜</div>
+                  <div class="option-btn" data-value="被剥夺感官(如被蒙眼)">被剥夺感官(如被蒙眼)</div>
+                  <div class="option-btn" data-value="自己的痛苦或快乐表情被欣赏">自己的痛苦或快乐表情被欣赏</div>
+                  <div class="option-btn" data-value="被强制高潮">被强制高潮</div>
+                  <div class="option-btn" data-value="被决定衣着">被决定衣着</div>
+                  <div class="option-btn" data-value="身上被留下印记">身上被留下印记</div>
+                  <div class="option-btn" data-value="被审问式对话">被审问式对话</div>
+                  <div class="option-btn" data-value="被剃毛">被剃毛</div>
+                  <div class="option-btn" data-value="被灌肠">被灌肠</div>
+                  <div class="option-btn" data-value="被禁止高潮">被禁止高潮</div>
+                  <div class="option-btn" data-value="角色扮演">角色扮演</div>
+                  <div class="option-btn" data-value="年龄扮演">年龄扮演</div>
+                  <div class="option-btn" data-value="制服诱惑">制服诱惑</div>
+                  <div class="option-btn" data-value="恋物(特定物品或材质如丝袜/皮革/乳胶)">
+                    恋物(特定物品或材质如丝袜/皮革/乳胶)
+                  </div>
+                  <div class="option-btn" data-value="恋足">恋足</div>
+                  <div class="option-btn" data-value="恋手">恋手</div>
+                  <div class="option-btn" data-value="疼痛游戏(痛感与快感模糊)">疼痛游戏(痛感与快感模糊)</div>
+                  <div class="option-btn" data-value="在公共或半公共场所">在公共或半公共场所</div>
+                  <div class="option-btn" data-value="暴露自己的身体">暴露自己的身体</div>
+                  <div class="option-btn" data-value="窥视他人">窥视他人</div>
+                  <div class="option-btn" data-value="被窥视">被窥视</div>
+                  <div class="option-btn" data-value="电话或语音性爱">电话或语音性爱</div>
+                  <div class="option-btn" data-value="录像或拍照">录像或拍照</div>
+                  <div class="option-btn" data-value="多人行">多人行</div>
+                  <div class="option-btn" data-value="NTR(伴侣与他人发生关系)">NTR(伴侣与他人发生关系)</div>
+                  <div class="option-btn" data-value="被NTR">被NTR</div>
+                  <div class="option-btn" data-value="体型差">体型差</div>
+                  <div class="option-btn" data-value="力量差">力量差</div>
+                  <div class="option-btn" data-value="脏话">脏话</div>
+                  <div class="option-btn" data-value="眼泪">眼泪</div>
+                  <div class="option-btn" data-value="汗水">汗水</div>
+                  <div class="option-btn" data-value="气味">气味</div>
+                  <div class="option-btn" data-value="蜡烛或冰块(温度游戏)">蜡烛或冰块(温度游戏)</div>
+                  <div class="option-btn" data-value="食物(将食物用于身体)">食物(将食物用于身体)</div>
+                  <div class="option-btn" data-value="窒息游戏(呼吸控制)">窒息游戏(呼吸控制)</div>
+                  <div class="option-btn" data-value="水中嬉戏">水中嬉戏</div>
+                  <div class="option-btn" data-value="睡眠侵犯(在对方睡着时)">睡眠侵犯(在对方睡着时)</div>
+                  <div class="option-btn" data-value="口交">口交</div>
+                  <div class="option-btn" data-value="手交">手交</div>
+                  <div class="option-btn" data-value="乳交">乳交</div>
+                  <div class="option-btn" data-value="足交">足交</div>
+                  <div class="option-btn" data-value="子宫交">子宫交</div>
+                </div>
+                <input
+                  type="text"
+                  class="form-input custom-input"
+                  id="kinksCustom"
+                  placeholder="自定义性癖（用逗号分隔）"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 爱好 -->
+          <div class="form-group full-width">
+            <div class="collapsible-section" id="hobbiesSection">
+              <div class="collapsible-header collapsed" onclick="toggleCollapse('hobbies')">
+                <div>
+                  <span>爱好</span>
+                  <span class="icon dice-icon" onclick="event.stopPropagation(); randomizeField('hobbies')">⚅</span>
+                  <span class="icon edit-icon" onclick="event.stopPropagation(); editCustom('hobbies')">🖋</span>
+                </div>
+                <span class="expand-icon">▼</span>
+              </div>
+              <div class="selected-items" id="hobbiesSelected"></div>
+              <div class="collapsible-content collapsed" id="hobbiesContent">
+                <div class="options-grid" id="hobbiesGrid">
+                  <div class="option-btn" data-value="阅读">阅读</div>
+                  <div class="option-btn" data-value="电影">电影</div>
+                  <div class="option-btn" data-value="听音乐">听音乐</div>
+                  <div class="option-btn" data-value="做音乐">做音乐</div>
+                  <div class="option-btn" data-value="写作">写作</div>
+                  <div class="option-btn" data-value="绘画">绘画</div>
+                  <div class="option-btn" data-value="摄影">摄影</div>
+                  <div class="option-btn" data-value="烹饪">烹饪</div>
+                  <div class="option-btn" data-value="烘焙">烘焙</div>
+                  <div class="option-btn" data-value="运动">运动</div>
+                  <div class="option-btn" data-value="健身">健身</div>
+                  <div class="option-btn" data-value="跑步">跑步</div>
+                  <div class="option-btn" data-value="游泳">游泳</div>
+                  <div class="option-btn" data-value="篮球">篮球</div>
+                  <div class="option-btn" data-value="足球">足球</div>
+                  <div class="option-btn" data-value="极限运动">极限运动</div>
+                  <div class="option-btn" data-value="舞蹈">舞蹈</div>
+                  <div class="option-btn" data-value="乐器演奏">乐器演奏</div>
+                  <div class="option-btn" data-value="戏剧表演">戏剧表演</div>
+                  <div class="option-btn" data-value="旅行">旅行</div>
+                  <div class="option-btn" data-value="徒步">徒步</div>
+                  <div class="option-btn" data-value="露营">露营</div>
+                  <div class="option-btn" data-value="钓鱼">钓鱼</div>
+                  <div class="option-btn" data-value="园艺">园艺</div>
+                  <div class="option-btn" data-value="手工艺">手工艺</div>
+                  <div class="option-btn" data-value="模型制作">模型制作</div>
+                  <div class="option-btn" data-value="电子游戏">电子游戏</div>
+                  <div class="option-btn" data-value="桌游">桌游</div>
+                  <div class="option-btn" data-value="品茶">品茶</div>
+                  <div class="option-btn" data-value="品酒">品酒</div>
+                  <div class="option-btn" data-value="收藏(邮票/硬币等)">收藏(邮票/硬币等)</div>
+                  <div class="option-btn" data-value="研究历史">研究历史</div>
+                  <div class="option-btn" data-value="研究哲学">研究哲学</div>
+                  <div class="option-btn" data-value="学习外语">学习外语</div>
+                  <div class="option-btn" data-value="看动漫">看动漫</div>
+                  <div class="option-btn" data-value="追剧">追剧</div>
+                  <div class="option-btn" data-value="逛博物馆">逛博物馆</div>
+                  <div class="option-btn" data-value="志愿者活动">志愿者活动</div>
+                  <div class="option-btn" data-value="投资理财">投资理财</div>
+                  <div class="option-btn" data-value="赛车">赛车</div>
+                  <div class="option-btn" data-value="潜水">潜水</div>
+                  <div class="option-btn" data-value="滑雪">滑雪</div>
+                  <div class="option-btn" data-value="性爱">性爱</div>
+                  <div class="option-btn" data-value="自慰">自慰</div>
+                </div>
+                <input
+                  type="text"
+                  class="form-input custom-input"
+                  id="hobbiesCustom"
+                  placeholder="自定义爱好（用逗号分隔）"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 敏感点 -->
+          <div class="form-group full-width">
+            <div class="collapsible-section" id="sensitiveSpotsSection">
+              <div class="collapsible-header collapsed" onclick="toggleCollapse('sensitiveSpots')">
+                <div>
+                  <span>敏感点</span>
+                  <span class="icon dice-icon" onclick="event.stopPropagation(); randomizeField('sensitiveSpots')"
+                    >⚅</span
+                  >
+                  <span class="icon edit-icon" onclick="event.stopPropagation(); editCustom('sensitiveSpots')">🖋</span>
+                </div>
+                <span class="expand-icon">▼</span>
+              </div>
+              <div class="selected-items" id="sensitiveSpotsSelected"></div>
+              <div class="collapsible-content collapsed" id="sensitiveSpotsContent">
+                <div class="options-grid" id="sensitiveSpotsGrid">
+                  <div class="option-btn" data-value="嘴唇">嘴唇</div>
+                  <div class="option-btn" data-value="舌头">舌头</div>
+                  <div class="option-btn" data-value="脖颈">脖颈</div>
+                  <div class="option-btn" data-value="后颈">后颈</div>
+                  <div class="option-btn" data-value="锁骨">锁骨</div>
+                  <div class="option-btn" data-value="耳垂">耳垂</div>
+                  <div class="option-btn" data-value="脊椎">脊椎</div>
+                  <div class="option-btn" data-value="腰窝">腰窝</div>
+                  <div class="option-btn" data-value="侧腰">侧腰</div>
+                  <div class="option-btn" data-value="小腹">小腹</div>
+                  <div class="option-btn" data-value="大腿内侧">大腿内侧</div>
+                  <div class="option-btn" data-value="脚踝">脚踝</div>
+                  <div class="option-btn" data-value="脚心">脚心</div>
+                  <div class="option-btn" data-value="胸口">胸口</div>
+                  <div class="option-btn" data-value="乳头">乳头</div>
+                  <div class="option-btn" data-value="肚脐">肚脐</div>
+                  <div class="option-btn" data-value="臀部">臀部</div>
+                  <div class="option-btn" data-value="阴蒂">阴蒂</div>
+                  <div class="option-btn" data-value="穴口">穴口</div>
+                  <div class="option-btn" data-value="G点">G点</div>
+                  <div class="option-btn" data-value="子宫口">子宫口</div>
+                  <div class="option-btn" data-value="子宫内壁">子宫内壁</div>
+                  <div class="option-btn" data-value="后穴口">后穴口</div>
+                  <div class="option-btn" data-value="前列腺">前列腺</div>
+                  <div class="option-btn" data-value="结肠口">结肠口</div>
+                  <div class="option-btn" data-value="阴茎">阴茎</div>
+                  <div class="option-btn" data-value="龟头">龟头</div>
+                  <div class="option-btn" data-value="马眼">马眼</div>
+                  <div class="option-btn" data-value="尿道">尿道</div>
+                </div>
+                <input
+                  type="text"
+                  class="form-input custom-input"
+                  id="sensitiveSpotsCustom"
+                  placeholder="自定义敏感点（用逗号分隔）"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 经历 -->
+        <div class="form-section">
+          <div class="form-group full-width">
+            <div class="form-label">
+              <span class="crown-icon"></span>
+              经历
+              <span class="icon dice-icon" onclick="randomizeAllExperience()">⚅</span>
+            </div>
+
+            <!-- 身份 -->
+            <div class="collapsible-section" id="identitySection">
+              <div class="collapsible-header collapsed" onclick="toggleCollapse('identity')">
+                <div>
+                  <span>身份</span>
+                  <span class="icon dice-icon" onclick="event.stopPropagation(); randomizeExperienceField('identity')"
+                    >⚅</span
+                  >
+                  <span class="icon edit-icon" onclick="event.stopPropagation(); editCustom('identity')">🖋</span>
+                </div>
+                <span class="expand-icon">▼</span>
+              </div>
+              <div class="selected-items" id="identitySelected"></div>
+              <div class="collapsible-content collapsed" id="identityContent">
+                <div class="options-grid single-select" id="identityGrid">
+                  <div class="option-btn" data-value="明星">明星</div>
+                  <div class="option-btn" data-value="豪门继承人">豪门继承人</div>
+                  <div class="option-btn" data-value="豪门私生子">豪门私生子</div>
+                  <div class="option-btn" data-value="大学生">大学生</div>
+                  <div class="option-btn" data-value="网红主播">网红主播</div>
+                  <div class="option-btn" data-value="模特">模特</div>
+                  <div class="option-btn" data-value="总裁">总裁</div>
+                  <div class="option-btn" data-value="投资人">投资人</div>
+                  <div class="option-btn" data-value="创业者">创业者</div>
+                  <div class="option-btn" data-value="甜点师">甜点师</div>
+                  <div class="option-btn" data-value="健身教练">健身教练</div>
+                  <div class="option-btn" data-value="工程师">工程师</div>
+                  <div class="option-btn" data-value="游戏策划">游戏策划</div>
+                  <div class="option-btn" data-value="医生">医生</div>
+                  <div class="option-btn" data-value="护士">护士</div>
+                  <div class="option-btn" data-value="赛车手">赛车手</div>
+                  <div class="option-btn" data-value="没落贵族">没落贵族</div>
+                  <div class="option-btn" data-value="检察官">检察官</div>
+                  <div class="option-btn" data-value="雇佣兵">雇佣兵</div>
+                  <div class="option-btn" data-value="警察">警察</div>
+                  <div class="option-btn" data-value="律师">律师</div>
+                  <div class="option-btn" data-value="程序员">程序员</div>
+                  <div class="option-btn" data-value="黑客">黑客</div>
+                  <div class="option-btn" data-value="导演">导演</div>
+                  <div class="option-btn" data-value="画家">画家</div>
+                  <div class="option-btn" data-value="音乐家">音乐家</div>
+                  <div class="option-btn" data-value="运动员">运动员</div>
+                  <div class="option-btn" data-value="电竞选手">电竞选手</div>
+                  <div class="option-btn" data-value="老师">老师</div>
+                  <div class="option-btn" data-value="调酒师">调酒师</div>
+                  <div class="option-btn" data-value="厨师">厨师</div>
+                  <div class="option-btn" data-value="美食评论家">美食评论家</div>
+                  <div class="option-btn" data-value="旅行家">旅行家</div>
+                  <div class="option-btn" data-value="考古学家">考古学家</div>
+                  <div class="option-btn" data-value="摄影师">摄影师</div>
+                  <div class="option-btn" data-value="消防员">消防员</div>
+                </div>
+                <input type="text" class="form-input custom-input" id="identityCustom" placeholder="自定义身份" />
+              </div>
+            </div>
+
+            <!-- 情感状态 -->
+            <div class="collapsible-section" id="relationshipStatusSection">
+              <div class="collapsible-header collapsed" onclick="toggleCollapse('relationshipStatus')">
+                <div>
+                  <span>情感状态</span>
+                  <span
+                    class="icon dice-icon"
+                    onclick="event.stopPropagation(); randomizeExperienceField('relationshipStatus')"
+                    >⚅</span
+                  >
+                  <span class="icon edit-icon" onclick="event.stopPropagation(); editCustom('relationshipStatus')"
+                    >🖋</span
+                  >
+                </div>
+                <span class="expand-icon">▼</span>
+              </div>
+              <div class="selected-items" id="relationshipStatusSelected"></div>
+              <div class="collapsible-content collapsed" id="relationshipStatusContent">
+                <div class="options-grid single-select" id="relationshipStatusGrid">
+                  <div class="option-btn" data-value="母胎单身">母胎单身</div>
+                  <div class="option-btn" data-value="单身">单身</div>
+                  <div class="option-btn" data-value="暗恋中">暗恋中</div>
+                  <div class="option-btn" data-value="刚刚失恋">刚刚失恋</div>
+                  <div class="option-btn" data-value="稳定恋爱中">稳定恋爱中</div>
+                  <div class="option-btn" data-value="已订婚">已订婚</div>
+                  <div class="option-btn" data-value="秘密已婚">秘密已婚</div>
+                  <div class="option-btn" data-value="合约婚姻">合约婚姻</div>
+                  <div class="option-btn" data-value="开放式关系">开放式关系</div>
+                  <div class="option-btn" data-value="正在办理离婚">正在办理离婚</div>
+                  <div class="option-btn" data-value="已离异">已离异</div>
+                  <div class="option-btn" data-value="丧偶">丧偶</div>
+                  <div class="option-btn" data-value="炮友关系">炮友关系</div>
+                  <div class="option-btn" data-value="被前任纠缠">被前任纠缠</div>
+                  <div class="option-btn" data-value="心中有白月光">心中有白月光</div>
+                  <div class="option-btn" data-value="渴望被包养">渴望被包养</div>
+                  <div class="option-btn" data-value="正在包养他人">正在包养他人</div>
+                  <div class="option-btn" data-value="假装单身">假装单身</div>
+                  <div class="option-btn" data-value="炒cp中">炒cp中</div>
+                  <div class="option-btn" data-value="海王">海王</div>
+                  <div class="option-btn" data-value="海后">海后</div>
+                </div>
+                <input
+                  type="text"
+                  class="form-input custom-input"
+                  id="relationshipStatusCustom"
+                  placeholder="自定义情感状态"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 其他自定义 -->
+        <div class="form-group full-width other-custom-section">
+          <div class="form-label">其他自定义</div>
+          <div style="margin-bottom: 10px">
+            <div class="form-label" style="margin-bottom: 5px; font-size: 13px">补充说明</div>
+            <textarea
+              class="form-input"
+              id="additionalInfo"
+              style="min-height: 60px; resize: vertical"
+              placeholder="在这里添加任何其他想要说明的信息，比如特殊经历、爱好、习惯等..."
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- 底部按钮 -->
+        <div class="bottom-actions">
+          <button class="action-btn" onclick="randomizeAll()">📚 随机生成全部</button>
+          <button class="action-btn primary" onclick="confirmCreate()">✨ 生成角色数据 ✨</button>
+        </div>
+
+        <div class="completion-text">生成完成后，您将获得完整的YAML格式角色数据</div>
+      </div>
+
+      <!-- 说明页面 -->
+      <div class="main-panel instruction-panel" id="instructionPanel" style="display: none">
+        <h1 class="title">✨ 生成完成 ✨</h1>
+
+        <div class="instruction-content">
+          <div class="important-steps">
+            <div class="step-item urgent">
+              <div class="step-number">1</div>
+              <div class="step-text">角色数据已生成完成，您可以 <strong>复制YAML数据</strong> 或 <strong>下载文件</strong></div>
+            </div>
+
+            <div class="step-item urgent">
+              <div class="step-number">2</div>
+              <div class="step-text">将角色数据导入到您需要的平台或工具中使用</div>
+            </div>
+
+            <div class="step-item warning">
+              <div class="step-icon">💡</div>
+              <div class="step-text">YAML格式的角色数据可以在各种聊天机器人、游戏或创作工具中使用</div>
+            </div>
+          </div>
+
+          <div class="thank-you-section">
+            <div class="thank-you-text">
+              <p>感谢使用通用角色生成器</p>
+              <p>希望这个工具能够帮助您的创作</p>
+              <p>欢迎反馈使用体验和改进建议</p>
+              <p>角色生成器开源免费，禁止商用。</p>
+            </div>
+
+            <div class="author-signature">
+              <div class="signature-text">基于原版修改 - 通用角色生成器</div>
+            </div>
+          </div>
+
+          <div class="decoration-stars">
+            <span class="star-decoration">✨</span>
+            <span class="star-decoration">⭐</span>
+            <span class="star-decoration">✨</span>
+            <span class="star-decoration">⭐</span>
+            <span class="star-decoration">✨</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- YAML结果显示窗口 -->
+    <div id="yamlModal" class="yaml-modal" style="display: none;">
+      <div class="yaml-modal-content">
+        <div class="yaml-modal-header">
+          <h2>角色数据 (YAML格式)</h2>
+          <span class="yaml-modal-close">&times;</span>
+        </div>
+        <div class="yaml-modal-body">
+          <textarea id="yamlOutput" readonly></textarea>
+          <div class="yaml-modal-actions">
+            <button id="copyYamlBtn" class="action-btn">📋 复制YAML</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/options-config.js"></script>
+    <script src="js/worlds-config.js"></script>
+    <script src="js/js-yaml.min.js"></script>
+    <script>
+      // 全局变量
+      let currentWorld = 'modern'; // 默认世界
+      let currentWorldConfig = null;
+      
+      // 从URL参数获取世界背景
+      function getWorldFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const world = urlParams.get('world');
+        return world && WORLDS_CONFIG[world] ? world : 'modern';
+      }
+      
+      // 应用世界背景主题
+      function applyWorldTheme(worldKey) {
+        const world = WORLDS_CONFIG[worldKey];
+        if (!world) return;
+        
+        currentWorld = worldKey;
+        currentWorldConfig = world;
+        
+        // 更新CSS变量
+        const root = document.documentElement;
+        const colors = world.color;
+        
+        // 解析背景渐变中的颜色
+        const gradientMatch = colors.background.match(/linear-gradient\([^)]+\)/);
+        if (gradientMatch) {
+          // 提取渐变中的颜色值
+          const colorMatches = colors.background.match(/#[a-fA-F0-9]{6}/g);
+          if (colorMatches && colorMatches.length >= 3) {
+            root.style.setProperty('--primary-color', colorMatches[0]);
+            root.style.setProperty('--primary-dark', colorMatches[1]);
+            root.style.setProperty('--primary-darker', colorMatches[2]);
+            root.style.setProperty('--panel-bg', colorMatches[0]);
+          }
+        }
+        
+        root.style.setProperty('--secondary-color', colors.secondary);
+        root.style.setProperty('--accent-color', colors.accent);
+        
+        // 更新背景
+        document.body.style.background = colors.background;
+        
+        // 更新页面元素
+        document.getElementById('worldIcon').textContent = world.icon;
+        document.getElementById('worldName').textContent = world.name;
+        document.getElementById('pageTitle').textContent = `✨ ${world.name} - 角色生成器 ✨`;
+        
+        // 更新装饰星星
+        updateDecorations(world.decorations);
+        
+        // 更新选项配置
+        updateWorldSpecificOptions(worldKey);
+      }
+      
+      // 更新装饰元素
+      function updateDecorations(decorations) {
+        const stars = document.querySelectorAll('.star');
+        stars.forEach((star, index) => {
+          if (decorations[index % decorations.length]) {
+            star.textContent = decorations[index % decorations.length];
+          }
+        });
+      }
+      
+      // 更新性别特定的下拉框选项
+      function updateGenderSpecificSelects(gender) {
+        const world = WORLDS_CONFIG[currentWorld];
+        if (!world) return;
+        
+        const selectMappings = {
+          'dressStyle': 'dressStyle',
+          'hairStyle': 'hairstyle', 
+          'accessories': 'accessories',
+          'illness': 'illness',
+          'characterTrait': 'specialTraits',
+          'bodyScent': 'bodyScent'
+        };
+        
+        Object.keys(selectMappings).forEach(selectId => {
+          const configKey = selectMappings[selectId];
+          if (world[configKey] && world[configKey].options && world[configKey].genderSpecific) {
+            const options = getOptionsForGender(world[configKey].options, gender);
+            updateSelectOptions(selectId, options);
+          }
+        });
+      }
+      
+      // 辅助函数：根据性别获取选项（用于下拉框）
+      function getOptionsForGender(optionsConfig, gender) {
+        if (!optionsConfig || typeof optionsConfig !== 'object') {
+          return [];
+        }
+        
+        // 如果options是数组，直接返回
+        if (Array.isArray(optionsConfig)) {
+          return optionsConfig;
+        }
+        
+        // 处理性别特定配置
+        const genderKey = GENDER_MAPPING[gender] || null;
+        
+        // 如果性别为空、未知或映射为'all'，显示所有选项（合并去重）
+        if (!gender || !genderKey || genderKey === 'all') {
+          const allOptions = [];
+          Object.keys(optionsConfig).forEach(key => {
+            if (Array.isArray(optionsConfig[key])) {
+              allOptions.push(...optionsConfig[key]);
+            }
+          });
+          // 去重并返回
+          return [...new Set(allOptions)];
+        }
+        
+        // 返回特定性别的选项，包括common选项
+        let specificOptions = [];
+        if (optionsConfig[genderKey] && Array.isArray(optionsConfig[genderKey])) {
+          specificOptions.push(...optionsConfig[genderKey]);
+        }
+        if (optionsConfig.common && Array.isArray(optionsConfig.common)) {
+          specificOptions.push(...optionsConfig.common);
+        }
+        
+        return [...new Set(specificOptions)];
+      }
+      
+      // 更新世界特定的选项
+      function updateWorldSpecificOptions(worldKey) {
+        const world = WORLDS_CONFIG[worldKey];
+        if (!world) return;
+        
+        // 将世界特定配置覆盖到CHARACTER_OPTIONS_CONFIG中
+        Object.keys(world).forEach(key => {
+          if (typeof world[key] === 'object' && world[key].type) {
+            CHARACTER_OPTIONS_CONFIG[key] = world[key];
+          }
+        });
+        
+        // 更新身份选项
+        if (world.identity && world.identity.options) {
+          updateSelectOptions('identity', world.identity.options);
+        }
+        
+        // 更新其他下拉框选项
+        const selectMappings = {
+          'dressStyle': 'dressStyle',
+          'hairStyle': 'hairstyle', 
+          'accessories': 'accessories',
+          'illness': 'illness',
+          'characterTrait': 'specialTraits',
+          'bodyScent': 'bodyScent'
+        };
+        
+        Object.keys(selectMappings).forEach(selectId => {
+          const configKey = selectMappings[selectId];
+          if (world[configKey] && world[configKey].options) {
+            // 处理性别特定选项
+            if (world[configKey].genderSpecific) {
+              const currentGender = getCurrentGender();
+              const options = getOptionsForGender(world[configKey].options, currentGender);
+              updateSelectOptions(selectId, options);
+            } else {
+              updateSelectOptions(selectId, world[configKey].options);
+            }
+          }
+        });
+        
+        // 重新初始化所有选项组以应用新配置
+        initializeAllOptionGroups();
+      }
+      
+      // 更新下拉选择框选项
+      function updateSelectOptions(selectId, options) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        
+        // 保存当前选中的值
+        const currentValue = select.value;
+        
+        // 清空现有选项（保留第一个空选项）
+        const firstOption = select.querySelector('option[value=""]');
+        select.innerHTML = '';
+        if (firstOption) {
+          select.appendChild(firstOption);
+        }
+        
+        // 添加新选项
+        options.forEach(option => {
+          const optionElement = document.createElement('option');
+          optionElement.value = option;
+          optionElement.textContent = option;
+          select.appendChild(optionElement);
+        });
+        
+        // 恢复选中的值（如果还存在）
+        if (options.includes(currentValue)) {
+          select.value = currentValue;
+        }
+      }
+      
+      // 页面初始化
+      function initializePage() {
+        const worldKey = getWorldFromURL();
+        applyWorldTheme(worldKey);
+      }
+      
+      // 在页面加载时初始化
+      document.addEventListener('DOMContentLoaded', function() {
+        initializePage();
+      });
+      
+      // 适配新版配置文件的兼容层
+      const CHARACTER_OPTIONS_CONFIG = OPTIONS_CONFIG;
+      
+      // 性别映射配置（新版配置文件中没有这个）
+      const GENDER_MAPPING = {
+        '女': 'female',
+        '扶她': 'all', 
+        '男': 'male',
+        '双性': 'all',
+        '无性': 'all'
+      };
+
+      // 工具函数：根据性别获取选项（适配新版配置结构）
+      function getOptionsByGender(fieldName, gender = '') {
+        const config = CHARACTER_OPTIONS_CONFIG[fieldName];
+        if (!config) return [];
+        
+        // 如果不是性别特定的配置，直接返回选项
+        if (!config.genderSpecific) {
+          return Array.isArray(config.options) ? config.options : [];
+        }
+
+        // 处理性别特定配置
+        const genderKey = GENDER_MAPPING[gender] || null;
+        
+        // 如果性别为空、未知或映射为'all'，显示所有选项（合并去重）
+        if (!gender || !genderKey || genderKey === 'all') {
+          const allOptions = [];
+          Object.keys(config.options).forEach(key => {
+            if (Array.isArray(config.options[key])) {
+              allOptions.push(...config.options[key]);
+            }
+          });
+          // 去重并返回
+          return [...new Set(allOptions)];
+        }
+        
+        // 先尝试获取性别特定选项
+        let options = config.options[genderKey] || [];
+        
+        // 如果找不到特定性别选项，尝试获取通用选项
+        if (options.length === 0) {
+          options = config.options.common || [];
+        }
+        
+        // 如果还是空，合并所有可用选项（兼容旧版 "all" 概念）
+        if (options.length === 0) {
+          const allOptions = [];
+          Object.keys(config.options).forEach(key => {
+            if (Array.isArray(config.options[key])) {
+              allOptions.push(...config.options[key]);
+            }
+          });
+          // 去重
+          options = [...new Set(allOptions)];
+        }
+        
+        return options;
+      }
+
+      // 工具函数：获取随机选项（适配新版配置）
+      function getRandomOptions(fieldName, gender = '', count = 1) {
+        const config = CHARACTER_OPTIONS_CONFIG[fieldName];
+        if (!config) return [];
+        
+        // 使用配置中的随机数量范围，如果没有指定则使用传入的count
+        let finalCount = count;
+        if (config.randomCount) {
+          const { min, max } = config.randomCount;
+          finalCount = Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        const options = getOptionsByGender(fieldName, gender);
+        if (!Array.isArray(options) || options.length === 0) return [];
+        
+        const shuffled = [...options].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, Math.min(finalCount, options.length));
+      }
+
+      // 工具函数：生成选项HTML（适配新版配置）
+      function generateOptionsHTML(fieldName, gender = '') {
+        const options = getOptionsByGender(fieldName, gender);
+        if (!Array.isArray(options) || options.length === 0) return '';
+        
+        return options.map(option => 
+          `<div class="option-btn" data-value="${option}">${option}</div>`
+        ).join('\n          ');
+      }
+
+      // 工具函数：动态更新选项网格（适配新版配置）
+      function updateOptionsGrid(fieldName, gender = '') {
+        const grid = document.getElementById(fieldName + 'Grid');
+        if (!grid) return;
+        
+        const optionsHTML = generateOptionsHTML(fieldName, gender);
+        grid.innerHTML = optionsHTML;
+        
+        // 重新绑定事件监听器（如果需要）
+        updateSelectedItems(fieldName);
+      }
+
+      // 穿搭风格选项获取函数（新版配置中没有这个特殊处理）
+      function getDressStyleOptionsByGender(gender) {
+        // 由于新版配置没有dressStyle，我们需要从现有的HTML中获取选项
+        const dressStyleSelect = document.getElementById('dressStyle');
+        if (!dressStyleSelect) return [];
+        
+        const options = Array.from(dressStyleSelect.options)
+          .map(option => option.value)
+          .filter(value => value && value !== '');
+        
+        return options;
+      }
+    </script>
+    <script>
+      // 字段验证和错误显示功能
+      function showFieldError(fieldId, errorMessage) {
+        const fieldGroup = document.getElementById(fieldId).closest('.form-group');
+        const errorElement = document.getElementById(fieldId + 'Error');
+        
+        if (fieldGroup) {
+          fieldGroup.classList.add('error');
+        }
+        
+        if (errorElement) {
+          if (errorMessage) {
+            errorElement.textContent = errorMessage;
+          }
+          errorElement.style.display = 'block';
+        }
+        
+        // 滚动到错误字段
+        document.getElementById(fieldId).scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+
+      function hideFieldError(fieldId) {
+        const fieldGroup = document.getElementById(fieldId).closest('.form-group');
+        const errorElement = document.getElementById(fieldId + 'Error');
+        
+        if (fieldGroup) {
+          fieldGroup.classList.remove('error');
+        }
+        
+        if (errorElement) {
+          errorElement.style.display = 'none';
+        }
+      }
+
+      function validateNameField() {
+        const realNameInput = document.getElementById('realName');
+        const realNameCustomInput = document.getElementById('realNameCustom');
+        
+        const realName = realNameInput.value.trim();
+        const realNameCustom = realNameCustomInput.value.trim();
+        
+        // 检查是否有任何形式的姓名输入
+        if (!realName && !realNameCustom) {
+          showFieldError('realName', '请输入姓名，这是必填项');
+          return false;
+        }
+        
+        // 检查姓名长度
+        const finalName = realName || realNameCustom;
+        if (finalName.length > 50) {
+          showFieldError('realName', '姓名长度不能超过50个字符');
+          return false;
+        }
+        
+        hideFieldError('realName');
+        return true;
+      }
+
+      // 选项按钮点击功能
+      document.querySelectorAll('.options-grid').forEach(grid => {
+        grid.addEventListener('click', function (e) {
+          // 找到被点击的选项按钮（考虑嵌套元素）
+          let targetBtn = e.target;
+          while (targetBtn && !targetBtn.classList.contains('option-btn')) {
+            targetBtn = targetBtn.parentElement;
+          }
+
+          if (targetBtn && targetBtn.classList.contains('option-btn')) {
+            // 检查是否为单选模式
+            if (grid.classList.contains('single-select')) {
+              // 单选模式特殊处理：如果点击已选中的按钮，则取消选择
+              if (targetBtn.classList.contains('selected')) {
+                targetBtn.classList.remove('selected');
+                targetBtn.removeAttribute('data-user-selected');
+
+                // 特殊处理绑定系统的原因，重置账户余额
+                if (grid.id === 'systemReasonGrid') {
+                  updateAccountBalance(0);
+                }
+              } else {
+                // 清除其他选择，只选中当前项
+                grid.querySelectorAll('.option-btn').forEach(btn => {
+                  btn.classList.remove('selected');
+                  btn.removeAttribute('data-user-selected');
+                });
+                targetBtn.classList.add('selected');
+                targetBtn.setAttribute('data-user-selected', 'true');
+
+                // 特殊处理绑定系统的原因，更新账户余额
+                if (grid.id === 'systemReasonGrid') {
+                  const balance = targetBtn.getAttribute('data-balance');
+                  if (balance !== null) {
+                    updateAccountBalance(parseInt(balance));
+                  }
+                }
+              }
+            } else {
+              // 多选模式：切换选中状态
+              if (targetBtn.classList.contains('selected')) {
+                targetBtn.classList.remove('selected');
+                targetBtn.removeAttribute('data-user-selected');
+              } else {
+                targetBtn.classList.add('selected');
+                targetBtn.setAttribute('data-user-selected', 'true');
+              }
+            }
+            updateSelectedItems(grid.id.replace('Grid', ''));
+          }
+        });
+      });
+
+      // 折叠功能
+      function toggleCollapse(sectionName) {
+        const header = document.querySelector(`#${sectionName}Section .collapsible-header`);
+        const content = document.querySelector(`#${sectionName}Content`);
+        const selectedItems = document.querySelector(`#${sectionName}Selected`);
+
+        header.classList.toggle('collapsed');
+        content.classList.toggle('collapsed');
+
+        // 如果折叠且有选中项，显示选中项
+        if (header.classList.contains('collapsed') && selectedItems.children.length > 0) {
+          selectedItems.classList.add('show');
+        } else {
+          selectedItems.classList.remove('show');
+        }
+      }
+
+      // 更新选中项显示
+      function updateSelectedItems(sectionName) {
+        const grid = document.getElementById(sectionName + 'Grid');
+        const selectedContainer = document.getElementById(sectionName + 'Selected');
+
+        if (!grid || !selectedContainer) return;
+
+        const selectedBtns = grid.querySelectorAll('.option-btn.selected');
+        const customInput = document.getElementById(sectionName + 'Custom');
+        selectedContainer.innerHTML = '';
+
+        // 显示选中的选项
+        selectedBtns.forEach(btn => {
+          const item = document.createElement('div');
+          item.className = 'selected-item';
+
+          // 特殊处理系统原因选项，显示标题而不是data-value
+          if (sectionName === 'systemReason' && btn.classList.contains('system-reason-option')) {
+            const titleElement = btn.querySelector('.system-reason-title');
+            item.textContent = titleElement ? titleElement.textContent : btn.getAttribute('data-value');
+          } else {
+            item.textContent = btn.getAttribute('data-value');
+          }
+
+          selectedContainer.appendChild(item);
+        });
+
+        // 显示自定义输入的内容
+        if (customInput && customInput.value.trim()) {
+          const customItems = customInput.value
+            .split(',')
+            .map(s => s.trim())
+            .filter(s => s);
+          customItems.forEach(customValue => {
+            const item = document.createElement('div');
+            item.className = 'selected-item';
+            item.style.backgroundColor = 'var(--accent-color)'; // 强调色背景区分自定义输入
+            item.textContent = customValue;
+            selectedContainer.appendChild(item);
+          });
+        }
+
+        // 更新折叠状态显示
+        const header = document.querySelector(`#${sectionName}Section .collapsible-header`);
+        if (header && header.classList.contains('collapsed')) {
+          const hasSelectedItems = selectedBtns.length > 0 || (customInput && customInput.value.trim());
+          if (hasSelectedItems) {
+            selectedContainer.classList.add('show');
+          } else {
+            selectedContainer.classList.remove('show');
+          }
+        }
+      }
+
+      // 获取当前性别
+      function getCurrentGender() {
+        const biologicalGender = document.getElementById('biologicalGender').value;
+        return biologicalGender;
+      }
+
+      // 根据性别获取面貌选项范围（使用配置）
+      // 检查字段是否已有用户主动选择的值
+      function hasUserValue(fieldName) {
+        const element = document.getElementById(fieldName);
+        if (element) {
+          if (
+            element.type === 'number' ||
+            element.tagName === 'INPUT' ||
+            element.tagName === 'SELECT' ||
+            element.tagName === 'TEXTAREA'
+          ) {
+            return element.value && element.value.trim() !== '' && element.dataset.userSelected === 'true';
+          }
+        }
+
+        // 检查多选选项
+        const grid = document.getElementById(fieldName + 'Grid');
+        if (grid) {
+          const userSelectedBtns = grid.querySelectorAll('.option-btn.selected[data-user-selected="true"]');
+          if (userSelectedBtns.length > 0) return true;
+        }
+
+        // 检查自定义输入
+        const customInput = document.getElementById(fieldName + 'Custom');
+        if (
+          customInput &&
+          customInput.value &&
+          customInput.value.trim() !== '' &&
+          customInput.dataset.userSelected === 'true'
+        ) {
+          return true;
+        }
+
+        return false;
+      }
+
+      // 检查字段是否已有值（不区分用户选择还是随机生成）
+      function hasValue(fieldName) {
+        const element = document.getElementById(fieldName);
+        if (element) {
+          if (
+            element.type === 'number' ||
+            element.tagName === 'INPUT' ||
+            element.tagName === 'SELECT' ||
+            element.tagName === 'TEXTAREA'
+          ) {
+            return element.value && element.value.trim() !== '';
+          }
+        }
+
+        // 检查多选选项
+        const grid = document.getElementById(fieldName + 'Grid');
+        if (grid) {
+          const selectedBtns = grid.querySelectorAll('.option-btn.selected');
+          if (selectedBtns.length > 0) return true;
+        }
+
+        // 检查自定义输入
+        const customInput = document.getElementById(fieldName + 'Custom');
+        if (customInput && customInput.value && customInput.value.trim() !== '') {
+          return true;
+        }
+
+        return false;
+      }
+
+      // 随机化字段功能
+      function randomizeField(fieldName, force = false) {
+        // 如果不是强制模式且有用户主动选择的值，则跳过
+        if (!force && hasUserValue(fieldName)) {
+          return;
+        }
+
+        const randomData = {
+          age: () => Math.floor(Math.random() * 18) + 18, // 18-35岁
+          biologicalGender: () => ['女', '男', '扶她', '双性', '无性'][Math.floor(Math.random() * 5)],
+          sexualOrientation: () =>
+            ['异性恋', '同性恋', '四爱', '双性恋', '泛性恋', '无爱者', '无性恋'][Math.floor(Math.random() * 7)],
+          positiveTraits: () => getRandomOptions('positiveTraits', getCurrentGender(), Math.floor(Math.random() * 3) + 1),
+          negativeTraits: () => getRandomOptions('negativeTraits', getCurrentGender(), Math.floor(Math.random() * 3) + 1),
+          loveViews: () => getRandomOptions('loveViews', getCurrentGender(), Math.floor(Math.random() * 3) + 1),
+          socialStyle: () => getRandomOptions('socialStyle', getCurrentGender(), Math.floor(Math.random() * 3) + 1),
+          face: () => getRandomOptions('face', getCurrentGender(), Math.floor(Math.random() * 2) + 1),
+          body: () => getRandomOptions('body', getCurrentGender(), Math.floor(Math.random() * 2) + 1),
+          skinColor: () =>
+            ['冷白', '暖白', '偏黄', '小麦色', '蜜糖色', '深棕色', '透明感白', '病态苍白', '黑皮'][
+              Math.floor(Math.random() * 9)
+            ],
+          eyeColor: () =>
+            [
+              '黑色',
+              '白色',
+              '棕色',
+              '灰色',
+              '酒红色',
+              '亮红色',
+              '紫色',
+              '蓝色',
+              '绿色',
+              '银色',
+              '烟紫色',
+              '浅紫',
+              '浅粉色',
+              '玫瑰色',
+              '雾蓝灰',
+              '浅海蓝',
+              '墨绿色',
+              '灰绿色',
+              '灰蓝色',
+              '天蓝色',
+            ][Math.floor(Math.random() * 20)],
+          facialFeatures: () =>
+            [
+              '凤眼',
+              '圆眼',
+              '桃花眼',
+              '单眼皮',
+              '内双',
+              '狗狗下垂眼',
+              '长睫毛',
+              '微笑唇',
+              '薄唇',
+              '厚唇',
+              '小翘鼻',
+              '高鼻梁',
+              '美人痣',
+              '泪痣',
+              '眉心痣',
+              '酒窝',
+              '梨涡',
+              '雀斑',
+              '美人尖',
+              '婴儿肥',
+              '眉毛有疤',
+            ][Math.floor(Math.random() * 21)],
+          hairColor: () =>
+            [
+              '黑色',
+              '白色',
+              '棕色',
+              '玫瑰金',
+              '酒红色',
+              '亮红色',
+              '紫色',
+              '蓝色',
+              '绿色',
+              '奶奶灰',
+              '银色',
+              '深灰色',
+              '烟灰色',
+              '浅紫',
+              '浅粉色',
+              '玫瑰色',
+              '雾蓝灰',
+              '浅海蓝',
+              '渐变色',
+              '挑染',
+              '挂耳染',
+              '发尾染',
+            ][Math.floor(Math.random() * 22)],
+          hairStyle: () =>
+            [
+              '短发',
+              '中长发',
+              '长发',
+              '及肩长发',
+              '及腰长发',
+              '直发',
+              '卷发',
+              '板寸',
+              '前刺',
+              '微分碎盖',
+              '背头',
+              '中分',
+              '狼尾发型',
+              '半扎发',
+              '高马尾',
+              '低马尾',
+              '丸子头',
+              '长直发',
+              '大波浪长发',
+              '双马尾',
+              '单侧编发',
+            ][Math.floor(Math.random() * 21)],
+          dressStyle: () => {
+            const gender = getCurrentGender();
+            const styles = getDressStyleOptionsByGender(gender);
+            return styles[Math.floor(Math.random() * styles.length)];
+          },
+          accessories: () => {
+            const accessories = [
+              '框架眼镜',
+              '金属细框眼镜',
+              '耳环',
+              '长耳坠',
+              '耳钉',
+              '项链',
+              '金属链条',
+              '手表',
+              '戒指',
+              '银戒指',
+              '手链',
+              '手镯',
+              '唇钉',
+              '眉钉',
+              '乳钉',
+              '舌钉',
+              '领带',
+              '胸针',
+              '袖扣',
+              '棒球帽',
+              '渔夫帽',
+              '口罩',
+            ];
+            return accessories[Math.floor(Math.random() * accessories.length)];
+          },
+          illness: () => {
+            const illnesses = [
+              '胃病',
+              '偏头痛',
+              '失眠症',
+              '抑郁症',
+              '焦虑症',
+              '躁郁症',
+              'PTSD',
+              '斯德哥尔摩综合征',
+              'ADHD',
+              '社交恐惧症',
+              '幽闭恐惧症',
+              '哮喘',
+              '心脏病',
+              '过敏体质',
+              '厌食症',
+              '暴食症',
+              '强迫症',
+              '洁癖',
+              '恐高',
+              '脸盲',
+              '选择困难症',
+              '人格分裂',
+              '情感隔离',
+              '重度视力障碍',
+              '眼盲',
+              '耳聋',
+              '哑巴',
+              '下肢瘫痪',
+              '勃起障碍',
+              '无法射精',
+              '性瘾',
+            ];
+            return illnesses[Math.floor(Math.random() * illnesses.length)];
+          },
+          characterTrait: () => {
+            const traits = [
+              '推眼镜',
+              '思考时会轻咬下唇',
+              '与人交谈时身体会微微前倾',
+              '把玩物品',
+              '按太阳穴',
+              '手插兜',
+              '口头禅',
+              '把"谢谢"挂在嘴边',
+              '喜欢说叠词',
+              '港台腔',
+              '北京腔',
+              '东北话',
+              '粤语',
+              '说话时喜欢配上肢体接触',
+            ];
+            return traits[Math.floor(Math.random() * traits.length)];
+          },
+          bodyScent: () => {
+            const scents = [
+              '无特殊气味',
+              '清淡的皂香',
+              '清爽的洗衣液味',
+              '阳光晒过的味道',
+              '牛奶味',
+              '奶糖味',
+              '淡淡的花香味',
+              '雨后森林的气息',
+              '常用的香水味',
+              '木质香',
+              '海洋调香',
+              '柑橘香',
+              '荷尔蒙气息强烈',
+              '汗味',
+              '烟草味',
+              '咖啡香',
+              '茶香',
+              '消毒水味',
+              '书墨味',
+              '冷冽的空气味',
+              '甜腻的糕点味',
+              '微弱的血腥味',
+            ];
+            return scents[Math.floor(Math.random() * scents.length)];
+          },
+          sensitivity: () => {
+            const levels = [
+              '身体迟钝',
+              '普通敏感',
+              '较为敏感',
+              '很敏感',
+              '全身都是敏感点',
+              '轻触即可唤起快感',
+              '痛感与快感界限模糊',
+              '触碰就高潮',
+              '多重高潮体质',
+              '感觉过载(易被过度刺激)',
+            ];
+            return levels[Math.floor(Math.random() * levels.length)];
+          },
+          sexualHistory: () => {
+            const histories = [
+              '无性经验',
+              '仅有理论知识',
+              '仅有一次经验',
+              '经验很少',
+              '只有固定的长期伴侣',
+              '经验适中',
+              '有过数位伴侣',
+              '经验丰富',
+              '性观念开放',
+              '性关系混乱',
+              '有BDSM经验',
+              '仅有同性经验',
+              '仅有异性经验',
+              '双性经验皆有',
+              '有过非自愿性行为',
+              '曾嫖娼',
+              '当过娼',
+              '有为了资源或目的的性经历',
+              '曾有经验但很久没有性生活',
+            ];
+            return histories[Math.floor(Math.random() * histories.length)];
+          },
+          libido: () => {
+            const levels = [
+              '禁欲',
+              '无性欲',
+              '极低性欲',
+              '低于普通',
+              '普通性欲',
+              '高于平均',
+              '强烈性欲',
+              '极高性欲',
+              '时时刻刻都有极高性欲',
+            ];
+            return levels[Math.floor(Math.random() * levels.length)];
+          },
+          kinks: () => getRandomOptions('kinks', getCurrentGender(), Math.floor(Math.random() * 5) + 1),
+          hobbies: () => getRandomOptions('hobbies', getCurrentGender(), Math.floor(Math.random() * 4) + 2),
+          sensitiveSpots: () => getRandomOptions('sensitiveSpots', getCurrentGender(), Math.floor(Math.random() * 3) + 2),
+        };
+
+        if (randomData[fieldName]) {
+          const value = randomData[fieldName]();
+
+          if (Array.isArray(value)) {
+            // 处理多选选项
+            const grid = document.getElementById(fieldName + 'Grid');
+            if (grid) {
+              // 清除所有选择
+              grid.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+              // 选择随机项
+              value.forEach(item => {
+                const btn = grid.querySelector(`[data-value="${item}"]`);
+                if (btn) btn.classList.add('selected');
+              });
+              // 更新选中项显示
+              updateSelectedItems(fieldName);
+            }
+          } else {
+            // 处理单选项和数值项
+            const element = document.getElementById(fieldName);
+            if (element) {
+              element.value = value;
+            }
+          }
+        }
+
+        // 特殊处理身高体重的随机值
+        if (fieldName === 'age') {
+          const ageElement = document.getElementById('age');
+          if (ageElement) {
+            ageElement.value = Math.floor(Math.random() * 18) + 18; // 18-35岁
+          }
+        } else if (fieldName === 'height') {
+          const heightElement = document.getElementById('height');
+          const gender = getCurrentGender();
+          if (heightElement) {
+            if (gender === '女' || gender === '扶她') {
+              heightElement.value = Math.floor(Math.random() * 41) + 140; // 140-180cm
+            } else if (gender === '男' || gender === '双性') {
+              heightElement.value = Math.floor(Math.random() * 24) + 175; // 175-198cm
+            } else {
+              heightElement.value = Math.floor(Math.random() * 59) + 140; // 140-198cm
+            }
+          }
+        } else if (fieldName === 'weight') {
+          const weightElement = document.getElementById('weight');
+          const gender = getCurrentGender();
+          if (weightElement) {
+            if (gender === '女' || gender === '扶她') {
+              weightElement.value = Math.floor(Math.random() * 21) + 40; // 40-60kg
+            } else if (gender === '男' || gender === '双性') {
+              weightElement.value = Math.floor(Math.random() * 21) + 60; // 60-80kg
+            } else {
+              weightElement.value = Math.floor(Math.random() * 41) + 40; // 40-80kg
+            }
+          }
+        }
+      }
+
+      // 获取随机项目
+      function getRandomItems(array, count) {
+        const shuffled = array.sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, count);
+      }
+
+      // 属性加点功能
+      function updateAttributeInput(attributeName, value) {
+        const input = document.getElementById(attributeName + 'Input');
+        if (input) {
+          input.value = value;
+        }
+      }
+
+      function updateAttributeSlider(attributeName, value) {
+        const slider = document.getElementById(attributeName + 'Slider');
+        if (slider) {
+          slider.value = Math.max(0, Math.min(100, parseInt(value) || 0));
+        }
+      }
+
+      function randomizeAttribute(attributeName, force = false) {
+        // 如果不是强制模式且有用户主动选择的值，则跳过
+        if (!force) {
+          const input = document.getElementById(attributeName + 'Input');
+          if (
+            input &&
+            input.value &&
+            input.value !== '10' &&
+            input.value !== '0' &&
+            input.dataset.userSelected === 'true'
+          ) {
+            return;
+          }
+        }
+
+        let randomValue;
+        if (attributeName === 'reputation') {
+          // 风评值的随机范围是-80到+80
+          randomValue = Math.floor(Math.random() * 161) - 80; // -80 到 +80
+        } else {
+          // 其他属性的随机范围是0-100
+          randomValue = Math.floor(Math.random() * 101); // 0-100范围
+        }
+
+        const slider = document.getElementById(attributeName + 'Slider');
+        const input = document.getElementById(attributeName + 'Input');
+
+        if (slider) slider.value = randomValue;
+        if (input) input.value = randomValue;
+      }
+
+      function randomizeAllAttributes() {
+        // 属性加点功能已被移除
+        alert('属性加点功能已被移除');
+      }
+
+      function randomizeBasicAttributes() {
+        // 基础属性功能已被移除
+        alert('基础属性功能已被移除');
+      }
+
+      function randomizeAbilityAttributes() {
+        // 能力数值功能已被移除
+        alert('能力数值功能已被移除');
+      }
+
+      // 账户余额功能已被移除
+      function updateAccountBalance(balance) {
+        // 功能已被移除
+      }
+
+      // 经历部分的随机化
+      function randomizeExperienceField(fieldName, force = false) {
+        // 如果不是强制模式且有用户主动选择的值，则跳过
+        if (!force && hasUserValue(fieldName)) {
+          return;
+        }
+        const experienceData = {
+          identity: () => getRandomOptions('identity', getCurrentGender(), 1)[0],
+
+          relationshipStatus: () => getRandomOptions('relationshipStatus', getCurrentGender(), 1)[0],
+        };
+
+        const value = experienceData[fieldName]();
+        const grid = document.getElementById(fieldName + 'Grid');
+
+        if (grid) {
+          // 清除所有选择
+          grid.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+
+          if (fieldName === 'systemReason') {
+            // 特殊处理绑定系统的原因
+            const btn = grid.querySelector(`[data-value="${value.value}"]`);
+            if (btn) {
+              btn.classList.add('selected');
+              updateAccountBalance(value.balance);
+            }
+          } else {
+            // 选择随机项
+            const btn = grid.querySelector(`[data-value="${value}"]`);
+            if (btn) btn.classList.add('selected');
+          }
+
+          // 更新选中项显示
+          updateSelectedItems(fieldName);
+        }
+      }
+
+      // 随机生成所有经历
+      function randomizeAllExperience() {
+        randomizeExperienceField('identity');
+        randomizeExperienceField('relationshipStatus');
+
+        alert('已随机生成所有经历信息！');
+      }
+
+      // 编辑自定义输入
+      function editCustom(fieldName) {
+        const customInput = document.getElementById(fieldName + 'Custom');
+        if (customInput) {
+          customInput.classList.toggle('show');
+          if (customInput.classList.contains('show')) {
+            customInput.focus();
+          }
+        }
+      }
+
+      // 为所有自定义输入框和普通输入框添加事件监听器
+      function setupCustomInputListeners() {
+        const customInputs = document.querySelectorAll('[id$="Custom"]');
+        customInputs.forEach(input => {
+          input.addEventListener('input', function () {
+            const fieldName = this.id.replace('Custom', '');
+            // 标记为用户选择
+            this.setAttribute('data-user-selected', 'true');
+            updateSelectedItems(fieldName);
+            
+            // 如果是姓名字段，进行实时验证
+            if (fieldName === 'realName') {
+              validateNameField();
+            }
+          });
+        });
+
+        // 为普通输入框添加用户选择标记
+        const normalInputs = document.querySelectorAll('input, select, textarea');
+        normalInputs.forEach(input => {
+          if (!input.id.endsWith('Custom')) {
+            input.addEventListener('input', function () {
+              this.setAttribute('data-user-selected', 'true');
+              
+              // 如果是姓名字段，进行实时验证
+              if (this.id === 'realName') {
+                validateNameField();
+              }
+            });
+            input.addEventListener('change', function () {
+              this.setAttribute('data-user-selected', 'true');
+              
+              // 如果是姓名字段，进行实时验证
+              if (this.id === 'realName') {
+                validateNameField();
+              }
+            });
+          }
+        });
+      }
+
+      // 随机生成全部
+      function randomizeAll() {
+        if (confirm('确定要随机生成全部信息吗？这将只填充空白部分，不会覆盖已填写的内容。')) {
+          // 先随机生理性别，因为其他选项会根据性别进行筛选
+          randomizeField('biologicalGender');
+
+          // 基本信息
+          randomizeField('age');
+          randomizeField('sexualOrientation');
+
+          // 性格特征
+          randomizeField('positiveTraits');
+          randomizeField('negativeTraits');
+          randomizeField('loveViews');
+          randomizeField('socialStyle');
+
+          // 外貌设定（这些会受性别影响）
+          randomizeField('height');
+          randomizeField('weight');
+          randomizeField('face');
+          randomizeField('body');
+          randomizeField('dressStyle');
+
+          // 其他外貌设定（不受性别影响）
+          randomizeField('skinColor');
+          randomizeField('eyeColor');
+          randomizeField('facialFeatures');
+          randomizeField('hairColor');
+          randomizeField('hairStyle');
+          randomizeField('accessories');
+
+          // 其他设定
+          randomizeField('illness');
+          randomizeField('characterTrait');
+          randomizeField('bodyScent');
+          randomizeField('sensitivity');
+          randomizeField('sexualHistory');
+          randomizeField('libido');
+          randomizeField('kinks');
+          randomizeField('hobbies');
+          randomizeField('sensitiveSpots');
+
+          // 随机化经历
+          randomizeExperienceField('identity');
+          randomizeExperienceField('relationshipStatus');
+
+          alert('已随机生成所有信息！');
+        }
+      }
+
+      // 显示说明页面
+      function showInstructionPage() {
+        // 隐藏原始表单页面
+        const mainPanel = document.querySelector('.main-panel:not(.instruction-panel)');
+        if (mainPanel) {
+          mainPanel.style.display = 'none';
+        }
+
+        // 显示说明页面
+        const instructionPanel = document.getElementById('instructionPanel');
+        if (instructionPanel) {
+          instructionPanel.style.display = 'flex';
+
+          // 添加淡入动画效果
+          instructionPanel.style.opacity = '0';
+          instructionPanel.style.transition = 'opacity 0.8s ease-in-out';
+
+          setTimeout(() => {
+            instructionPanel.style.opacity = '1';
+          }, 100);
+        }
+      }
+
+      // 确认创建角色
+      function confirmCreate() {
+        
+        // 先进行表单验证
+        if (!validateNameField()) {
+          return;
+        }
+        
+        const characterData = collectFormData();
+
+        // 获取最终的姓名（优先使用常规输入，然后是自定义输入）
+        const finalName = characterData.realName || 
+                         document.getElementById('realNameCustom').value.trim();
+
+        if (!finalName) {
+          showFieldError('realName', '请输入姓名，这是必填项');
+          alert('请先填写必填项目！');
+          return;
+        }
+
+        const confirmMsg = `确认生成角色：${finalName}？`;
+
+        if (confirm(confirmMsg)) {
+
+          try {
+            // 显示YAML数据
+            showYamlModal(characterData);
+            
+            alert('角色数据生成成功！请查看YAML输出窗口。');
+
+          } catch (error) {
+            alert('生成角色数据时发生错误，请检查控制台获取详细信息。');
+          }
+        }
+      }
+
+      // 创建 InitVar 世界书条目
+      async function createInitVarLorebookEntry(lorebook, characterData) {
+        const userName = characterData.realName || '{{user}}';
+
+        const initVarContent = `{
+  "用户": {
+    "姓名": ["${userName}", "用户的姓名。请勿主动更新此项，除非用户明确要求你更新"],
+    "位置": ["未知", "用户当前所在的地点。"],
+    "衣着": ["未知", "用户当前的穿着描述。"],
+    "行为": ["未知", "描述用户当前的主要行为或姿态。"],
+
+    "身份": ["${characterData.identity || '未知'}", "用户当前的身份，请根据剧情更新"],
+    "性欲值": [0, "范围[0, 100]，用户的当前生理欲望强度。当用户处于性爱场景时跟随剧情更新。"],
+
+    "时间": ["暂无", "当前的时间,24小时制,请根据剧情及时更新"],
+    "日期": ["暂无", "当前的日期，请根据剧情及时更新。如:7/24/2025，或第一天"]
+  }
+}`;
+
+        const initVarEntry = {
+          comment: '[InitVar] 用户初始（请勿打开或修改）',
+          enabled: false, // 关闭状态
+          position: 'before_character_definition',
+          content: initVarContent,
+          keys: ['InitVar', '用户初始'],
+          order: 0,
+          priority: 1000,
+        };
+
+        await createLorebookEntries(lorebook, [initVarEntry]);
+      }
+
+      // 创建用户人设世界书条目
+      async function createUserProfileLorebookEntry(lorebook, characterData) {
+        let profileContent = `#用户人设\n用户姓名：${characterData.realName}。\n\n`;
+
+        // 添加基本信息
+        if (characterData.age) {
+          profileContent += `年龄：${characterData.age}\n`;
+        }
+        if (characterData.biologicalGender) {
+          profileContent += `生理性别：${characterData.biologicalGender}\n`;
+        }
+        if (characterData.sexualOrientation) {
+          profileContent += `性取向：${characterData.sexualOrientation}\n`;
+        }
+
+        // 添加正面性格
+        if (characterData.positiveTraits && characterData.positiveTraits.length > 0) {
+          profileContent += `正面性格：${characterData.positiveTraits.join('、')}\n`;
+        }
+
+        // 添加负面性格
+        if (characterData.negativeTraits && characterData.negativeTraits.length > 0) {
+          profileContent += `负面性格：${characterData.negativeTraits.join('、')}\n`;
+        }
+
+        // 添加感情观
+        if (characterData.loveViews && characterData.loveViews.length > 0) {
+          profileContent += `感情观：${characterData.loveViews.join('、')}\n`;
+        }
+
+        // 添加社交风格
+        if (characterData.socialStyle && characterData.socialStyle.length > 0) {
+          profileContent += `社交风格：${characterData.socialStyle.join('、')}\n`;
+        }
+
+        // 添加外貌设定
+        if (characterData.height) {
+          profileContent += `身高：${characterData.height}cm\n`;
+        }
+        if (characterData.weight) {
+          profileContent += `体重：${characterData.weight}kg\n`;
+        }
+        if (characterData.face && characterData.face.length > 0) {
+          profileContent += `面貌：${characterData.face.join('、')}\n`;
+        }
+        if (characterData.body && characterData.body.length > 0) {
+          profileContent += `身材：${characterData.body.join('、')}\n`;
+        }
+        if (characterData.skinColor) {
+          profileContent += `肤色：${characterData.skinColor}\n`;
+        }
+        if (characterData.eyeColor) {
+          profileContent += `瞳色：${characterData.eyeColor}\n`;
+        }
+        if (characterData.facialFeatures) {
+          profileContent += `面部特征：${characterData.facialFeatures}\n`;
+        }
+        if (characterData.hairColor) {
+          profileContent += `发色：${characterData.hairColor}\n`;
+        }
+        if (characterData.hairStyle) {
+          profileContent += `发型：${characterData.hairStyle}\n`;
+        }
+        if (characterData.dressStyle) {
+          profileContent += `日常穿搭偏好：${characterData.dressStyle}\n`;
+        }
+        if (characterData.accessories) {
+          profileContent += `标志性配饰：${characterData.accessories}\n`;
+        }
+
+        // 添加其他设定
+        if (characterData.illness) {
+          profileContent += `病症：${characterData.illness}\n`;
+        }
+        if (characterData.characterTrait) {
+          profileContent += `人物特点：${characterData.characterTrait}\n`;
+        }
+        if (characterData.bodyScent) {
+          profileContent += `体味：${characterData.bodyScent}\n`;
+        }
+        if (characterData.sensitivity) {
+          profileContent += `身体敏感度：${characterData.sensitivity}\n`;
+        }
+        if (characterData.sexualHistory) {
+          profileContent += `过往性经历：${characterData.sexualHistory}\n`;
+        }
+        if (characterData.libido) {
+          profileContent += `性欲指数：${characterData.libido}\n`;
+        }
+        if (characterData.kinks && characterData.kinks.length > 0) {
+          profileContent += `性癖：${characterData.kinks.join('、')}\n`;
+        }
+        if (characterData.hobbies && characterData.hobbies.length > 0) {
+          profileContent += `爱好：${characterData.hobbies.join('、')}\n`;
+        }
+        if (characterData.sensitiveSpots && characterData.sensitiveSpots.length > 0) {
+          profileContent += `敏感点：${characterData.sensitiveSpots.join('、')}\n`;
+        }
+
+        // 添加情感状态
+        if (characterData.relationshipStatus) {
+          profileContent += `过往情感状态：${characterData.relationshipStatus}\n`;
+        }
+
+        // 添加身份
+        if (characterData.identity) {
+          profileContent += `初始身份：${characterData.identity}\n`;
+        }
+
+        // 添加其他自定义信息
+        if (characterData.additionalInfo) {
+          profileContent += `补充说明：${characterData.additionalInfo}\n`;
+        }
+
+        const userProfileEntry = {
+          comment: '用户人设',
+          enabled: true,
+          type: 'constant',
+          position: 'at_depth_as_system',
+          depth: 2,
+          content: profileContent,
+          keys: ['用户人设', characterData.realName],
+          order: 100,
+          priority: 500,
+        };
+
+        await createLorebookEntries(lorebook, [userProfileEntry]);
+      }
+
+      // 发送初始消息
+      async function sendInitialMessage(characterData) {
+        let messageContent = `#用户人设\n用户姓名：${characterData.realName}。\n\n`;
+
+        // 添加用户选择的选项
+        if (characterData.age) {
+          messageContent += `年龄：${characterData.age}，`;
+        }
+        if (characterData.biologicalGender) {
+          messageContent += `生理性别：${characterData.biologicalGender}，`;
+        }
+        if (characterData.psychologicalGender) {
+          messageContent += `心理认知性别：${characterData.psychologicalGender}，`;
+        }
+        if (characterData.publicGender) {
+          messageContent += `对外公开性别：${characterData.publicGender}，`;
+        }
+        if (characterData.sexualOrientation) {
+          messageContent += `性取向：${characterData.sexualOrientation}，`;
+        }
+        if (characterData.positiveTraits && characterData.positiveTraits.length > 0) {
+          messageContent += `正面性格：${characterData.positiveTraits.join('、')}，`;
+        }
+        if (characterData.negativeTraits && characterData.negativeTraits.length > 0) {
+          messageContent += `负面性格：${characterData.negativeTraits.join('、')}，`;
+        }
+        if (characterData.loveViews && characterData.loveViews.length > 0) {
+          messageContent += `感情观：${characterData.loveViews.join('、')}，`;
+        }
+        if (characterData.socialStyle && characterData.socialStyle.length > 0) {
+          messageContent += `社交风格：${characterData.socialStyle.join('、')}，`;
+        }
+        if (characterData.height) {
+          messageContent += `身高：${characterData.height}cm，`;
+        }
+        if (characterData.weight) {
+          messageContent += `体重：${characterData.weight}kg，`;
+        }
+        if (characterData.face && characterData.face.length > 0) {
+          messageContent += `面貌：${characterData.face.join('、')}，`;
+        }
+        if (characterData.body && characterData.body.length > 0) {
+          messageContent += `身材：${characterData.body.join('、')}，`;
+        }
+        if (characterData.skinColor) {
+          messageContent += `肤色：${characterData.skinColor}，`;
+        }
+        if (characterData.eyeColor) {
+          messageContent += `瞳色：${characterData.eyeColor}，`;
+        }
+        if (characterData.facialFeatures) {
+          messageContent += `面部特征：${characterData.facialFeatures}，`;
+        }
+        if (characterData.hairColor) {
+          messageContent += `发色：${characterData.hairColor}，`;
+        }
+        if (characterData.hairStyle) {
+          messageContent += `发型：${characterData.hairStyle}，`;
+        }
+        if (characterData.dressStyle) {
+          messageContent += `日常穿搭偏好：${characterData.dressStyle}，`;
+        }
+        if (characterData.accessories) {
+          messageContent += `标志性配饰：${characterData.accessories}，`;
+        }
+        if (characterData.illness) {
+          messageContent += `病症：${characterData.illness}，`;
+        }
+        if (characterData.characterTrait) {
+          messageContent += `人物特点：${characterData.characterTrait}，`;
+        }
+        if (characterData.bodyScent) {
+          messageContent += `体味：${characterData.bodyScent}，`;
+        }
+        if (characterData.sensitivity) {
+          messageContent += `身体敏感度：${characterData.sensitivity}，`;
+        }
+        if (characterData.sexualHistory) {
+          messageContent += `过往性经历：${characterData.sexualHistory}，`;
+        }
+        if (characterData.libido) {
+          messageContent += `性欲指数：${characterData.libido}，`;
+        }
+        if (characterData.kinks && characterData.kinks.length > 0) {
+          messageContent += `性癖：${characterData.kinks.join('、')}，`;
+        }
+        if (characterData.hobbies && characterData.hobbies.length > 0) {
+          messageContent += `爱好：${characterData.hobbies.join('、')}，`;
+        }
+        if (characterData.sensitiveSpots && characterData.sensitiveSpots.length > 0) {
+          messageContent += `敏感点：${characterData.sensitiveSpots.join('、')}，`;
+        }
+
+        if (characterData.additionalInfo) {
+          messageContent += `补充说明：${characterData.additionalInfo}，`;
+        }
+
+        // 移除最后的逗号
+        messageContent = messageContent.replace(/，$/, '');
+
+        const chatMessage = {
+          role: 'user',
+          message: messageContent,
+          send_date: '',
+        };
+
+        try {
+          window.parent.document.querySelector('#send_textarea').value = messageContent;
+          //window.parent.document.querySelector('#send_but').click();
+        } catch (error) {
+          alert('无法自动发送。角色信息已输出到控制台，请手动复制。');
+        }
+      }
+
+      // 收集表单数据
+      function collectFormData() {
+        const data = {
+          // 基本信息
+          realName: document.getElementById('realName').value,
+          age: document.getElementById('age').value,
+          biologicalGender: document.getElementById('biologicalGender').value,
+          sexualOrientation: document.getElementById('sexualOrientation').value,
+
+          // 性格特征
+          positiveTraits: getSelectedOptions('positiveTraitsGrid'),
+          negativeTraits: getSelectedOptions('negativeTraitsGrid'),
+          loveViews: getSelectedOptions('loveViewsGrid'),
+          socialStyle: getSelectedOptions('socialStyleGrid'),
+
+          // 外貌设定
+          height: document.getElementById('height').value,
+          weight: document.getElementById('weight').value,
+          face: getSelectedOptions('faceGrid'),
+          body: getSelectedOptions('bodyGrid'),
+          skinColor: document.getElementById('skinColor').value,
+          eyeColor: document.getElementById('eyeColor').value,
+          facialFeatures: document.getElementById('facialFeatures').value,
+          hairColor: document.getElementById('hairColor').value,
+          hairStyle: document.getElementById('hairStyle').value,
+          dressStyle: document.getElementById('dressStyle').value,
+          accessories: document.getElementById('accessories').value,
+
+          // 其他设定
+          illness: document.getElementById('illness').value,
+          characterTrait: document.getElementById('characterTrait').value,
+          bodyScent: document.getElementById('bodyScent').value,
+          sensitivity: document.getElementById('sensitivity').value,
+          sexualHistory: document.getElementById('sexualHistory').value,
+          libido: document.getElementById('libido').value,
+          kinks: getSelectedOptions('kinksGrid'),
+          hobbies: getSelectedOptions('hobbiesGrid'),
+          sensitiveSpots: getSelectedOptions('sensitiveSpotsGrid'),
+
+          // 其他
+          additionalInfo: document.getElementById('additionalInfo').value,
+
+          // 经历
+          identity: getSelectedSingleOption('identityGrid'),
+          relationshipStatus: getSelectedSingleOption('relationshipStatusGrid'),
+        };
+
+        // 处理自定义输入 - 合并而不是替换
+        Object.keys(data).forEach(key => {
+          const customInput = document.getElementById(key + 'Custom');
+          if (customInput && customInput.value.trim()) {
+            if (Array.isArray(data[key])) {
+              // 对于数组类型，合并选项和自定义输入
+              const customItems = customInput.value
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s);
+              data[key] = [...data[key], ...customItems];
+            } else {
+              // 对于单选类型，如果没有选择选项，则使用自定义输入
+              if (!data[key] || data[key] === '') {
+                data[key] = customInput.value.trim();
+              }
+            }
+          }
+        });
+
+        return data;
+      }
+
+      // 获取选中的选项
+      function getSelectedOptions(gridId) {
+        const grid = document.getElementById(gridId);
+        if (!grid) return [];
+
+        const selectedBtns = grid.querySelectorAll('.option-btn.selected');
+        return Array.from(selectedBtns).map(btn => btn.getAttribute('data-value'));
+      }
+
+      // 获取单选选项
+      function getSelectedSingleOption(gridId) {
+        const grid = document.getElementById(gridId);
+        if (!grid) return '';
+
+        const selectedBtn = grid.querySelector('.option-btn.selected');
+        return selectedBtn ? selectedBtn.getAttribute('data-value') : '';
+      }
+
+      // 关闭模态窗口的函数
+      function closeYamlModal() {
+        const modal = document.getElementById('yamlModal');
+        
+        if (!modal) {
+          return;
+        }
+        
+        // 添加淡出动画
+        modal.style.transition = 'opacity 0.3s ease-in-out';
+        modal.style.opacity = '0';
+        
+        // 动画完成后隐藏
+        setTimeout(() => {
+          modal.style.display = 'none';
+          modal.style.transition = '';
+        }, 300);
+      }
+
+      // 安全的事件绑定函数
+      function bindModalEvents(modal) {
+        
+        if (!modal) {
+          return;
+        }
+        
+        try {
+          // 背景点击关闭
+          modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+              closeYamlModal();
+            }
+          });
+          
+          // 关闭按钮点击
+          const closeBtn = modal.querySelector('.yaml-modal-close');
+          
+          if (closeBtn) {
+            closeBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              closeYamlModal();
+            });
+          }
+          
+          // ESC键关闭
+          const escHandler = function(e) {
+            if (e.key === 'Escape' && modal.style.display === 'block') {
+              closeYamlModal();
+            }
+          };
+          document.addEventListener('keydown', escHandler);
+          
+        } catch (error) {
+          // 静默处理错误
+        }
+      }
+
+      // ===== 扩展性API函数 =====
+      
+      /**
+       * 动态添加新的选项组
+       * @param {string} groupName - 选项组名称
+       * @param {Object} config - 选项组配置
+       * @param {string} config.type - 选项类型 ('multi-select' 或 'single-select')
+       * @param {boolean} config.genderFilter - 是否按性别筛选
+       * @param {Array|Object} config.options - 选项列表或性别分组的选项
+       */
+      function addOptionGroup(groupName, config) {
+        try {
+          OPTIONS_CONFIG[groupName] = config;
+          
+          // 如果页面已加载，立即更新对应的网格
+          if (document.readyState === 'complete') {
+            const grid = document.getElementById(groupName + 'Grid');
+            if (grid) {
+              updateOptionsGrid(groupName, getCurrentGender());
+            }
+          }
+        } catch (error) {
+          // 静默处理错误
+        }
+      }
+
+      /**
+       * 更新现有选项组的选项
+       * @param {string} groupName - 选项组名称  
+       * @param {Array|Object} newOptions - 新的选项列表
+       */
+      function updateOptionGroup(groupName, newOptions) {
+        try {
+          if (OPTIONS_CONFIG[groupName]) {
+            OPTIONS_CONFIG[groupName].options = newOptions;
+            
+            // 立即刷新对应的网格
+            const grid = document.getElementById(groupName + 'Grid');
+            if (grid) {
+              updateOptionsGrid(groupName, getCurrentGender());
+            }
+          }
+        } catch (error) {
+          // 静默处理错误
+        }
+      }
+
+      /**
+       * 重新初始化所有选项组
+       */
+      function initializeAllOptionGroups() {
+        try {
+          // 获取当前性别
+          const currentGender = getCurrentGender();
+          
+          // 重新初始化所有选项组
+          Object.keys(CHARACTER_OPTIONS_CONFIG).forEach(groupName => {
+            const config = CHARACTER_OPTIONS_CONFIG[groupName];
+            if (config && config.type === 'multi-select') {
+              updateOptionsGrid(groupName, currentGender);
+            }
+          });
+          
+          // 重新初始化性别和身份下拉框
+          initializeGenderOptions();
+          initializeIdentityOptions();
+          
+        } catch (error) {
+          console.warn('重新初始化选项组时出错:', error);
+        }
+      }
+
+      /**
+       * 初始化性别选项
+       */
+      function initializeGenderOptions() {
+        const genderSelect = document.getElementById('biologicalGender');
+        if (genderSelect && UNIVERSAL_SEXUAL_OPTIONS.biologicalGender) {
+          updateSelectOptions('biologicalGender', UNIVERSAL_SEXUAL_OPTIONS.biologicalGender);
+        }
+      }
+
+      /**
+       * 初始化身份选项
+       */
+      function initializeIdentityOptions() {
+        const world = WORLDS_CONFIG[currentWorld];
+        if (world && world.identity && world.identity.options) {
+          updateSelectOptions('identity', world.identity.options);
+        }
+      }
+
+      /**
+       * 移除选项组
+       * @param {string} groupName - 要移除的选项组名称
+       */
+      function removeOptionGroup(groupName) {
+        try {
+          if (OPTIONS_CONFIG[groupName]) {
+            delete OPTIONS_CONFIG[groupName];
+            
+            // 清空对应的网格
+            const grid = document.getElementById(groupName + 'Grid');
+            if (grid) {
+              grid.innerHTML = '<!-- 选项组已移除 -->';
+            }
+          }
+        } catch (error) {
+          // 静默处理错误
+        }
+      }
+
+      /**
+       * 获取当前所有选项组的配置
+       * @returns {Object} 所有选项组配置的副本
+       */
+      function getAllOptionGroups() {
+        return JSON.parse(JSON.stringify(OPTIONS_CONFIG));
+      }
+
+      /**
+       * 获取特定选项组的配置
+       * @param {string} groupName - 选项组名称
+       * @returns {Object|null} 选项组配置的副本，不存在则返回null
+       */
+      function getOptionGroup(groupName) {
+        if (CHARACTER_OPTIONS_CONFIG[groupName]) {
+          return JSON.parse(JSON.stringify(CHARACTER_OPTIONS_CONFIG[groupName]));
+        }
+        return null;
+      }
+
+      // 将API函数暴露到全局作用域，方便外部调用
+      window.CharacterGeneratorAPI = {
+        addOptionGroup,
+        updateOptionGroup, 
+        removeOptionGroup,
+        getAllOptionGroups,
+        getOptionGroup,
+        // 也暴露一些核心函数
+        updateOptionsGrid,
+        getRandomOptions,
+        getOptionsByGender
+      };
+
+      // 页面加载完成后的初始化
+      document.addEventListener('DOMContentLoaded', function () {
+        
+        // 设置自定义输入框的事件监听器
+        setupCustomInputListeners();
+
+        // 添加性别变化监听器
+        const biologicalGenderSelect = document.getElementById('biologicalGender');
+        if (biologicalGenderSelect) {
+          biologicalGenderSelect.addEventListener('change', function() {
+            const currentGender = this.value;
+            // 当性别变化时，更新所有性别特定的选项网格
+            Object.keys(CHARACTER_OPTIONS_CONFIG).forEach(fieldName => {
+              const config = CHARACTER_OPTIONS_CONFIG[fieldName];
+              if (config && config.genderSpecific) {
+                updateOptionsGrid(fieldName, currentGender);
+              }
+            });
+            
+            // 同时更新性别特定的下拉框选项
+            updateGenderSpecificSelects(currentGender);
+          });
+        }
+
+        // 初始化动态选项网格
+        try {
+          Object.keys(CHARACTER_OPTIONS_CONFIG).forEach(fieldName => {
+            updateOptionsGrid(fieldName, getCurrentGender());
+          });
+        } catch (error) {
+          // 静默处理错误
+        }
+
+        // 验证关键元素是否存在
+        const yamlModal = document.getElementById('yamlModal');
+        const yamlOutput = document.getElementById('yamlOutput');
+        const copyBtn = document.getElementById('copyYamlBtn');
+
+        // 绑定模态窗口事件
+        if (yamlModal) {
+          bindModalEvents(yamlModal);
+        }
+
+        // 复制按钮
+        if (copyBtn) {
+          copyBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // 防止事件冒泡到模态窗口
+            copyYamlToClipboard();
+          });
+        }
+      });
+
+      // 显示YAML模态窗口
+      function showYamlModal(yamlData) {
+        
+        const modal = document.getElementById('yamlModal');
+        const output = document.getElementById('yamlOutput');
+        
+        if (!modal) {
+          alert('系统错误：找不到YAML显示窗口');
+          return;
+        }
+        
+        if (!output) {
+          alert('系统错误：找不到YAML输出区域');
+          return;
+        }
+        
+        try {
+          const yamlString = jsyaml.dump(yamlData, {indent: 2, lineWidth: 120});
+          
+          output.value = yamlString;
+          
+          // 确保模态窗口可见
+          modal.style.display = 'block';
+          modal.style.opacity = '0';
+          
+          // 使用requestAnimationFrame确保DOM更新后再显示动画
+          requestAnimationFrame(() => {
+            modal.style.transition = 'opacity 0.3s ease-in-out';
+            modal.style.opacity = '1';
+          });
+          
+          // 聚焦到输出区域以便用户可以直接操作
+          setTimeout(() => {
+            output.focus();
+          }, 100);
+          
+        } catch (error) {
+          alert('系统错误：无法生成YAML数据 - ' + error.message);
+        }
+      }
+
+      // 复制YAML到剪贴板
+      async function copyYamlToClipboard() {
+        
+        const output = document.getElementById('yamlOutput');
+        if (!output) {
+          alert('系统错误：找不到YAML输出区域');
+          return;
+        }
+        
+        const textToCopy = output.value.trim();
+        if (!textToCopy) {
+          alert('没有可复制的YAML数据');
+          return;
+        }
+        
+        // 方法1: 现代浏览器 Clipboard API
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(textToCopy);
+            alert('YAML数据已复制到剪贴板！');
+            return;
+          } catch (err) {
+            // 继续尝试其他方法
+          }
+        }
+        
+        // 方法2: 传统 execCommand 方法
+        try {
+          output.select();
+          output.setSelectionRange(0, 99999);
+          const successful = document.execCommand('copy');
+          
+          if (successful) {
+            alert('YAML数据已复制到剪贴板！');
+            return;
+          }
+        } catch (err) {
+          // 继续到方法3
+        }
+        
+        // 方法3: 手动复制提示
+        output.focus();
+        output.select();
+        alert('自动复制失败，请手动复制。已为您选中文本，请按 Ctrl+C (Mac: Cmd+C)');
+      }
+    </script>
+  </body>
+</html>

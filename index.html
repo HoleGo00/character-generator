@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色生成器 - 选择世界背景</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        /* 动态背景装饰 */
+        .bg-decoration {
+            position: fixed;
+            font-size: 20px;
+            opacity: 0.6;
+            animation: float 3s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .bg-decoration:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+        .bg-decoration:nth-child(2) { top: 20%; right: 15%; animation-delay: 0.5s; }
+        .bg-decoration:nth-child(3) { top: 60%; left: 8%; animation-delay: 1s; }
+        .bg-decoration:nth-child(4) { bottom: 20%; right: 12%; animation-delay: 1.5s; }
+        .bg-decoration:nth-child(5) { bottom: 30%; left: 20%; animation-delay: 2s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-20px) rotate(5deg); opacity: 0.8; }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .title {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #fff, #f8f9fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .worlds-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .world-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .world-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--world-gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .world-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .world-card:hover::before {
+            opacity: 0.8;
+        }
+
+        .world-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            display: block;
+            filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .world-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .world-description {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .select-btn {
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            padding: 12px 30px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .select-btn:hover {
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .footer-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 10px 20px;
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-5px);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 36px;
+            }
+
+            .worlds-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .world-card {
+                padding: 20px;
+            }
+
+            .world-icon {
+                font-size: 48px;
+            }
+
+            .world-name {
+                font-size: 20px;
+            }
+
+            .back-btn {
+                top: 20px;
+                left: 20px;
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+
+        /* 动态颜色变量（将由JavaScript设置） */
+        :root {
+            --modern-gradient: linear-gradient(135deg, #313a3d 0%, #2a3235 50%, #212a2d 100%);
+            --ancient-gradient: linear-gradient(135deg, #4a5d23 0%, #5a6b2a 50%, #3e4f1e 100%);
+            --scifi-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --fantasy-gradient: linear-gradient(135deg, #2d1b69 0%, #8e44ad 50%, #5d4e75 100%);
+            --urban-gradient: linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 50%, #0d0d0d 100%);
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景装饰 -->
+    <div class="bg-decoration">✨</div>
+    <div class="bg-decoration">⭐</div>
+    <div class="bg-decoration">💫</div>
+    <div class="bg-decoration">🌟</div>
+    <div class="bg-decoration">✨</div>
+
+    <!-- 返回按钮 -->
+    <a href="javascript:history.back()" class="back-btn">← 返回</a>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">✨ 角色生成器 ✨</h1>
+            <p class="subtitle">
+                选择您想要的世界背景，每个背景都有独特的设定和选项<br>
+                不同的世界将为您提供不同的角色生成体验
+            </p>
+        </div>
+
+        <div class="worlds-grid" id="worldsGrid">
+            <!-- 世界背景卡片将由JavaScript动态生成 -->
+        </div>
+
+        <div class="footer">
+            <div class="footer-text">
+                <p>每个世界背景都经过精心设计，包含专属的身份、配饰和风格选项</p>
+                <p>选择您喜欢的背景，开始创造独特的角色吧！</p>
+                <p style="margin-top: 15px; opacity: 0.6;">
+                    角色生成器 v2.0 - 多世界背景版本
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/worlds-config.js"></script>
+    <script>
+        // 初始化世界背景选择页面
+        function initWorldsPage() {
+            const grid = document.getElementById('worldsGrid');
+            if (!grid) return;
+
+            // 生成世界背景卡片
+            Object.keys(WORLDS_CONFIG).forEach(worldKey => {
+                const world = WORLDS_CONFIG[worldKey];
+                const card = createWorldCard(worldKey, world);
+                grid.appendChild(card);
+            });
+        }
+
+        // 创建世界背景卡片
+        function createWorldCard(worldKey, world) {
+            const card = document.createElement('div');
+            card.className = 'world-card';
+            card.style.setProperty('--world-gradient', world.color.background);
+
+            card.innerHTML = `
+                <span class="world-icon">${world.icon}</span>
+                <h3 class="world-name">${world.name}</h3>
+                <p class="world-description">${world.description}</p>
+                <a href="character-generator.html?world=${worldKey}" class="select-btn">
+                    进入 ${world.name}
+                </a>
+            `;
+
+            // 添加点击事件
+            card.addEventListener('click', function(e) {
+                // 如果点击的不是按钮，则触发按钮点击
+                if (!e.target.classList.contains('select-btn')) {
+                    const btn = card.querySelector('.select-btn');
+                    if (btn) {
+                        btn.click();
+                    }
+                }
+            });
+
+            return card;
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initWorldsPage);
+
+        // 动态更新背景装饰
+        function updateBackgroundDecorations() {
+            const decorations = document.querySelectorAll('.bg-decoration');
+            const allDecorations = ['✨', '⭐', '💫', '🌟', '🔮', '⚡', '🌙', '🌸'];
+            
+            decorations.forEach((deco, index) => {
+                const randomIcon = allDecorations[Math.floor(Math.random() * allDecorations.length)];
+                deco.textContent = randomIcon;
+            });
+        }
+
+        // 每10秒更新一次背景装饰
+        setInterval(updateBackgroundDecorations, 10000);
+    </script>
+</body>
+</html>
